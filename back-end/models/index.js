@@ -1,22 +1,34 @@
-const mongoose = require('mongoose');
-//const Image = require('./Images.model');
+const mongoose = require("mongoose");
+const User = require("./user");
+const Tag = require("./tag");
+const Role = require("./role");
+const Album = require("./album");
+const Wallpaper = require("./wallpaper");
+const Report = require("./report");
 
+mongoose.Promise = global.Promise;
 
 const db = {};
-//db.Images = Image;
 
+db.user = User;
+db.tag = Tag;
+db.role = Role;
+db.album = Album;
+db.wallpaper = Wallpaper;
+db.report = Report;
 
-//Ket noi CSDL
-db.connectDB = async () => {
-    try{
-        await mongoose.connect(process.env.MONGODB_URI)
-            .then(() => console.log("Connected to MongoDB"));
+const connectDB = async () => {
+  await mongoose
+    .connect(process.env.MONGO_URI, {
+      dbName: process.env.DB_NAME,
+    })
+    .then(() => console.log("Connected to Mongodb"))
+    .catch((error) => {
+      console.log(error.message);
+      process.exit();
+    });
+};
 
-    } catch(err) {
-        next(err)
-        process.exit();
-    }
-    
-}
+db.connect = connectDB;
 
 module.exports = db;
