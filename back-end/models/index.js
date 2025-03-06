@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const User = require("./user");
 const Tag = require("./tag");
-const Role = require("./role");
 const Album = require("./album");
 const Wallpaper = require("./wallpaper");
 const Report = require("./report");
@@ -12,7 +11,6 @@ const db = {};
 
 db.user = User;
 db.tag = Tag;
-db.role = Role;
 db.album = Album;
 db.wallpaper = Wallpaper;
 db.report = Report;
