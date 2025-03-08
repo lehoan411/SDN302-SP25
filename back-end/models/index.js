@@ -5,7 +5,6 @@ const Album = require("./album");
 const Wallpaper = require("./wallpaper");
 const Report = require("./report");
 
-mongoose.Promise = global.Promise;
 
 const db = {};
 
@@ -15,18 +14,17 @@ db.album = Album;
 db.wallpaper = Wallpaper;
 db.report = Report;
 
-const connectDB = async () => {
-  await mongoose
-    .connect(process.env.MONGO_URI, {
-      dbName: process.env.DB_NAME,
-    })
-    .then(() => console.log("Connected to Mongodb"))
-    .catch((error) => {
-      console.log(error.message);
-      process.exit();
-    });
-};
+//Ket noi CSDL
+db.connectDB = async () => {
+  try{
+      await mongoose.connect(process.env.MONGODB_URI)
+          .then(() => console.log("Connected to MongoDB"));
 
-db.connect = connectDB;
+  } catch(err) {
+      next(err)
+      process.exit();
+  }
+  
+}
 
 module.exports = db;

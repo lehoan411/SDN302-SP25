@@ -4,7 +4,6 @@ const httpErrors = require("http-errors");
 const bodyParser = require("body-parser");
 const db = require("./models");
 
-
 const cors = require("cors");
 require("dotenv").config();
 
@@ -23,8 +22,6 @@ app.get("/", async (req, res, next) => {
 });
 
 // tiep nhan request
-app.use("/");
-
 // Them middleware kiem soat requests loi cho web server
 app.use(async(req, res, next) => {
     next(httpErrors.BadRequest());
