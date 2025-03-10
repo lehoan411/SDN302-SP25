@@ -3,7 +3,7 @@ const morgan =require("morgan");
 const httpErrors = require("http-errors");
 const bodyParser = require("body-parser");
 const db = require("./models");
-
+const {authRouter } = require("./routes")
 
 const cors = require("cors");
 require("dotenv").config();
