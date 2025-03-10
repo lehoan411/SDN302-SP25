@@ -13,8 +13,9 @@ async function sendEmail(type, email, link) {
       port: 465,
       secure: true,
       auth: {
-        user: process.env.EMAIL,
-        pass: process.env.PASS,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+        
       },
     });
 
@@ -87,7 +88,7 @@ async function login(req, res) {
 
 
     const token = jwt.sign(
-      { id: user._id, username: user.name, },
+      { id: user._id, username: user.name, }, //them thong tin de ma hoa vao day 
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -101,14 +102,14 @@ async function login(req, res) {
 }
 
 
-
+//them ham o day
 
 
 
 const authenticationController = {
   sendEmail,
   login,
-
+  
 
 };
 
