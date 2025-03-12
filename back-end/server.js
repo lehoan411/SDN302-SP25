@@ -2,8 +2,8 @@ const express = require("express");
 const morgan =require("morgan");
 const httpErrors = require("http-errors");
 const bodyParser = require("body-parser");
-const db = require("./models");
-const {authRouter } = require("./routes")
+const db = require("./models/index");
+const {authRouter} = require("./routes");
 
 const cors = require("cors");
 require("dotenv").config();
@@ -14,7 +14,13 @@ const app = express();
 
 // Them cac middlewares kiem soat cac requests, responses
 app.use(morgan("dev"));
-app.use(cors());
+app.use(
+    cors({
+      origin: "http://localhost:3000",
+      methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+      credentials: true,
+    })
+  );
 app.use(bodyParser.json());
 
 // Dinh tuyen tai cap do root (root router)
@@ -23,7 +29,7 @@ app.get("/", async (req, res, next) => {
 });
 
 // tiep nhan request
-app.use("/");
+app.use("/auth", authRouter);
 
 // Them middleware kiem soat requests loi cho web server
 app.use(async(req, res, next) => {
