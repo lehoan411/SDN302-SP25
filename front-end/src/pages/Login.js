@@ -26,7 +26,7 @@ function Login() {
       toast.success("Login successful!");
       navigate("/");
     } else {
-      toast.error("Invalid email or password");
+      toast.error("InvaliD email or password");
     }
   };
 
