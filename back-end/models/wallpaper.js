@@ -9,7 +9,10 @@ const WallpaperSchema = new mongoose.Schema({
         required: true,
     },
     tags: [
-        { type: String }
+        {
+            type: String,
+            required: true,
+        }
     ],
     fromAlbum: {
         type: mongoose.Schema.Types.ObjectId,
@@ -29,13 +32,6 @@ const WallpaperSchema = new mongoose.Schema({
             user: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
             body: String,
             date: { type: Number, default: Date.now() },
-            replies: [
-                {
-                    user: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
-                    body: String,
-                    date: { type: Number, default: Date.now() },
-                }
-            ]
         }
     ],
 }, { timestamps: true });

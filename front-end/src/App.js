@@ -1,13 +1,14 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
-import Home from './components/Home';
+
 import Header from './components/Header';
 import Footer from './components/Footer';
-import WallpaperDetail from './components/WallpaperDetail';
-import Profile from './components/Profile';
-import EditProfile from './components/EditProfile';
-import AlbumWallpaper from './components/AlbumWallpaper';
+import Home from './pages/Home/Home';
+import WallpaperDetail from './pages/WallpaperDetail/WallpaperDetail';
+import Profile from './pages/Profile/Profile';
+import AlbumWallpaper from './pages/AlbumWallpaper/AlbumWallpaper';
+import EditProfile from './pages/Profile/EditProfile';
 
 function App() {
     return (
@@ -19,10 +20,10 @@ function App() {
                 {/* Nội dung chính */}
                     <Routes>
                         <Route path="/" element={<Home />} />
-                        <Route path="/wallpaper/:id" element={<WallpaperDetail />} />
+                        <Route path="/wallpaper/:wallpaperId" element={<WallpaperDetail />} />
                         <Route path="/profile" element={<Profile />} />
                         <Route path='/profile/edit-profile' element={<EditProfile/>}/>
-                        <Route path="/profile/album/:id" element={<AlbumWallpaper />} />
+                        <Route path="/profile/album/:albumId" element={<AlbumWallpaper />} />
                     </Routes>
 
                 {/* Footer */}

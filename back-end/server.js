@@ -3,7 +3,10 @@ const morgan =require("morgan");
 const httpErrors = require("http-errors");
 const bodyParser = require("body-parser");
 const db = require("./models");
-
+const WallpaperRouter = require("./routes/wallpaper.route");
+const UserRouter = require("./routes/user.route");
+const AlbumRouter = require("./routes/album.route");
+const ReportRouter = require("./routes/report.route");
 const cors = require("cors");
 require("dotenv").config();
 
@@ -22,6 +25,10 @@ app.get("/", async (req, res, next) => {
 });
 
 // tiep nhan request
+app.use("/wallpapers", WallpaperRouter);
+app.use("/users", UserRouter);
+app.use("/albums", AlbumRouter);
+app.use("/reports", ReportRouter);
 // Them middleware kiem soat requests loi cho web server
 app.use(async(req, res, next) => {
     next(httpErrors.BadRequest());

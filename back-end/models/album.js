@@ -2,9 +2,12 @@
 const mongoose = require('mongoose');
 
 const AlbumSchema = new mongoose.Schema({
-    name: {
+    albumName: {
         type: String,
         required: true,
+    },
+    albumImage: {
+        type: String,
     },
     wallpapers: [
         { type: mongoose.Schema.Types.ObjectId, ref: "wallpaper" }

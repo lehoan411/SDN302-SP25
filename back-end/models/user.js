@@ -33,6 +33,7 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     require: false,
   },
+  favorited: [{ type: mongoose.Schema.Types.ObjectId, ref: "wallpaper" }],
   status:{
     type: String,
     enum: ["active", "inactive"],
