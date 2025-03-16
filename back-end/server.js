@@ -2,8 +2,9 @@ const express = require("express");
 const morgan =require("morgan");
 const httpErrors = require("http-errors");
 const bodyParser = require("body-parser");
-const db = require("./models/index");
-const {authRouter} = require("./routes");
+const db = require("./models");
+
+const UserRouter = require("./routes/userRouter");
 
 const cors = require("cors");
 require("dotenv").config();
@@ -14,13 +15,10 @@ const app = express();
 
 // Them cac middlewares kiem soat cac requests, responses
 app.use(morgan("dev"));
-app.use(
-    cors({
-      origin: "http://localhost:3000",
-      methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-      credentials: true,
-    })
-  );
+app.use(cors({
+    origin: "http://localhost:3000", // Đảm bảo đúng với URL frontend
+    credentials: true,  // QUAN TRỌNG: Cho phép gửi cookie
+  }));
 app.use(bodyParser.json());
 
 // Dinh tuyen tai cap do root (root router)
@@ -29,7 +27,7 @@ app.get("/", async (req, res, next) => {
 });
 
 // tiep nhan request
-app.use("/auth", authRouter);
+app.use("/users", UserRouter);
 
 // Them middleware kiem soat requests loi cho web server
 app.use(async(req, res, next) => {
@@ -48,4 +46,3 @@ app.listen(port, hostname, () => {
     console.log(`Server running at: http://${hostname}:${port}`); 
     db.connectDB();
 });
-

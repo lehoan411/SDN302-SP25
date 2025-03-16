@@ -2,31 +2,30 @@ import "./Login.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import axios from "axios";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault();
     if (!email || !password) {
       toast.error("Please enter username and password");
       return;
     }
 
-    // Fake user authentication
-    const fakeUser = {
-      email: "test@example.com",
-      password: "password123",
-      name: "Test User"
-    };
+    try {
+      const response = await axios.post("http://localhost:9999/users/sign-in", { email, password }, { withCredentials: true });
 
-    if (email === fakeUser.email && password === fakeUser.password) {
-      toast.success("Login successful!");
-      navigate("/");
-    } else {
-      toast.error("InvaliD email or password");
+      if (response.status === 200) {
+        toast.success("Login successful!");
+        navigate("/");
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || "Login failed. Please try again.";
+      toast.error(errorMessage);
     }
   };
 

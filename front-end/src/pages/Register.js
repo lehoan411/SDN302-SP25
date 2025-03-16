@@ -1,7 +1,8 @@
-import "./Register.scss"
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import "./Register.scss";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Modal, Button } from "react-bootstrap"; // Import Modal từ Bootstrap
 
 const Register = () => {
     const navigate = useNavigate();
@@ -13,37 +14,55 @@ const Register = () => {
         confirmPassword: ""
     });
 
+    const [showModal, setShowModal] = useState(false); // State để hiển thị modal
+
     const validateEmail = (email) => {
         return String(email)
             .toLowerCase()
             .match(
-                /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.\".+\")@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+                /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
             );
     };
 
-    const handleRegister = (event) => {
+    const handleRegister = async (event) => {
         event.preventDefault();
-        
-        if (newUser.password !== newUser.confirmPassword) {
-            toast.error("Confirm password didn't match");
-            return;
+        try {
+            if (newUser.password !== newUser.confirmPassword) {
+                toast.error("Confirm password didn't match");
+                return;
+            }
+
+            if (!validateEmail(newUser.email)) {
+                toast.error("Please enter a valid email: example@gmail.com");
+                return;
+            }
+
+            const response = await fetch("http://localhost:9999/users/sign-up", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(newUser),
+            });
+
+            const data = await response.json();
+
+            if (response.status === 201) {
+                toast.success(data.message);
+                setShowModal(true); // Hiển thị modal sau khi đăng ký thành công
+            } else {
+                toast.error(data.message);
+            }
+        } catch (error) {
+            console.error("Registration Error:", error);
+            toast.error("Something went wrong! Please try again.");
         }
-        
-        if (!validateEmail(newUser.email)) {
-            toast.error("Please enter a valid email: example@gmail.com");
-            return;
-        }
-        
-        // Fake response simulation
-        const response = { status: 201, message: "Registration successful!" };
-        
-        if (response.status === 201) {
-            toast.success(response.message);
-            navigate('/login');
-        } else {
-            toast.error(response.message);
-        }
-    }
+    };
+
+    const handleCloseModal = () => {
+        setShowModal(false);
+        navigate('/login'); // Chuyển hướng sau khi bấm OK
+    };
 
     return (
         <div className="register">
@@ -57,8 +76,23 @@ const Register = () => {
                 <Link to="/login" className="forgot-password fs-6 text-white">Already have an account? Login here</Link>
                 <button onClick={handleRegister} className="sign-in-button">Register</button>
             </div>
+
+            {/* Modal đăng ký thành công */}
+            <Modal show={showModal} onHide={handleCloseModal} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Registration Successful!</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    Your account has been created successfully.
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="primary" onClick={handleCloseModal}>
+                        OK
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
-}
+};
 
 export default Register;
