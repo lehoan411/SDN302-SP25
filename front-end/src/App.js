@@ -32,12 +32,15 @@ function App() {
                 <Header />
                 <Routes>
                     <Route path="/" element={<Home />} />
+                    <Route path="/" element={<Home />} />
+                    <Route path="/wallpaper/:wallpaperId" element={<WallpaperDetail />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path='/profile/edit-profile' element={<EditProfile />} />
+                    <Route path="/profile/album/:albumId" element={<AlbumWallpaper />} />
                     <Route path="/register" element={<Register />} />
-                    {/* <Route path="active-account/:token" element={<Page.ActiveAccount />} />
-                    <Route path="/forgot-password" ></Route> */}
                     <Route path="/change-password" element={<ChangePassword />} />
                     <Route path="/login" element={<Login />} />
-                     <Route path="management/account" element={<AccountManagement />} />
+                    <Route path="management/account" element={<AccountManagement />} />
                     <Route path="management/report" element={<ReportList />} />
                     <Route path="management/report/:id" element={<ReportDetail />} />
                     <Route path="am" element={<AccountManagement />} />
@@ -45,36 +48,17 @@ function App() {
                 <Footer />
             </div>
             <ToastContainer
-        position="bottom-left"
-        autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-        </BrowserRouter>
-    );
-        <BrowserRouter>
-            <div>
-                {/* Header */}
-                <Header />
-
-                {/* Nội dung chính */}
-                    <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/wallpaper/:wallpaperId" element={<WallpaperDetail />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path='/profile/edit-profile' element={<EditProfile/>}/>
-                        <Route path="/profile/album/:albumId" element={<AlbumWallpaper />} />
-                    </Routes>
-
-                {/* Footer */}
-                <Footer />
-            </div>
+                position="bottom-left"
+                autoClose={4000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
         </BrowserRouter>
     );
 }

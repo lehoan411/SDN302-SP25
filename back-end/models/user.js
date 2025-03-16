@@ -28,7 +28,6 @@ const UserSchema = new mongoose.Schema({
   ],
   albums: [{ type: mongoose.Schema.Types.ObjectId, ref: "album" }],
   shared: [{ type: mongoose.Schema.Types.ObjectId, ref: "album" }],
-  liked: [{ type: mongoose.Schema.Types.ObjectId, ref: "wallpaper" }],
   dob: {
     type: Date,
     require: false,
