@@ -1,32 +1,27 @@
 const mongoose = require("mongoose");
 const User = require("./user");
-const Tag = require("./tag");
 const Album = require("./album");
 const Wallpaper = require("./wallpaper");
 const Report = require("./report");
-
-mongoose.Promise = global.Promise;
+const Role = require("./role"); 
 
 const db = {};
 
 db.user = User;
-db.tag = Tag;
 db.album = Album;
 db.wallpaper = Wallpaper;
 db.report = Report;
+db.role = Role;
 
-const connectDB = async () => {
-  await mongoose
-    .connect(process.env.MONGO_URI, {
-      dbName: process.env.DB_NAME,
-    })
-    .then(() => console.log("Connected to Mongodb"))
-    .catch((error) => {
-      console.log(error.message);
-      process.exit();
-    });
+// Kết nối CSDL
+db.connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log("Connected to MongoDB");
+  } catch (err) {
+    console.error("Error connecting to MongoDB:", err.message);
+    process.exit(1); // Thoát chương trình với mã lỗi
+  }
 };
-
-db.connect = connectDB;
 
 module.exports = db;
