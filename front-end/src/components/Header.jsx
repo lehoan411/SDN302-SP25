@@ -83,16 +83,12 @@ const Header = () => {
           // Nếu chưa đăng nhập
           <>
             {/* Input nhập userId */}
-            <Form.Control
-              type="text"
-              placeholder="Enter User ID"
-              value={inputUserId}
-              onChange={(e) => setInputUserId(e.target.value)}
-              style={{ width: "150px", marginRight: "10px" }}
-            />
+            <Button variant="warning" className="fw-semibold px-3 text-white">
+              Register
+            </Button>
             {/* Nút Join để lưu userId vào localStorage */}
             <Button variant="success" className="fw-semibold px-3 text-white" onClick={handleJoin}>
-              Join
+              Login
             </Button>
           </>
         )}
