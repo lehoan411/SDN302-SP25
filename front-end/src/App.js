@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
@@ -9,6 +10,9 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
 import { ToastContainer } from 'react-toastify';
+import AccountManagement from "./pages/AccountManagement/AccountManagement";
+import ReportList from "./pages/ReportList/ReportList";
+import ReportDetail from "./pages/ReportDetail/ReportDetail";
 function App() {
     return (
         <BrowserRouter>
@@ -21,6 +25,10 @@ function App() {
                     <Route path="/forgot-password" ></Route> */}
                     <Route path="/change-password" element={<ChangePassword />} />
                     <Route path="/login" element={<Login />} />
+                     <Route path="management/account" element={<AccountManagement />} />
+                    <Route path="management/report" element={<ReportList />} />
+                    <Route path="management/report/:id" element={<ReportDetail />} />
+                    <Route path="am" element={<AccountManagement />} />
                 </Routes>
                 <Footer />
             </div>
