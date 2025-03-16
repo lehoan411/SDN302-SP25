@@ -1,18 +1,30 @@
+
 import React, { useState } from "react";
 import { Navbar, Nav, Button, Dropdown } from "react-bootstrap";
-import { MenuOutlined } from "@ant-design/icons";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Header = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Mặc định đã đăng nhập
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Mặc định chưa đăng nhập
+  const navigate = useNavigate();
+
   const [user] = useState({
     name: "John Doe",
     avatar: "https://i.pravatar.cc/40?img=3", // Avatar người dùng
   });
 
+  const handleJoin = () => {
+    navigate("/login"); // Chuyển hướng sang trang Login khi ấn Join
+  };
+
+  const handleSignUp = () => {
+    navigate("/register"); // Chuyển hướng sang trang Register khi ấn Sign-up
+  };
+
   return (
     <Navbar bg="light" expand="lg" className="px-4 py-2 shadow-sm">
-      <Navbar.Brand href="/" className="fw-bold fs-4">Get Images</Navbar.Brand>
+      <Navbar.Brand as={Link} to="/" className="fw-bold fs-4">
+        Get Images
+      </Navbar.Brand>
 
       <Nav className="ms-auto d-flex align-items-center gap-3">
         <Dropdown>
@@ -25,15 +37,13 @@ const Header = () => {
             <Dropdown.Item href="#">Trending</Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
-
+        <Button variant="primary" onClick={() => navigate("/change-password")}>
+        Change Password
+      </Button>
         {isLoggedIn ? (
-          // Nếu đã đăng nhập
           <>
-            {/* Welcome Message & Avatar */}
             <span className="fw-semibold">Welcome, {user.name}</span>
 
-
-            {/* User Dropdown */}
             <Dropdown align="end">
               <Dropdown.Toggle
                 variant="light"
@@ -48,7 +58,7 @@ const Header = () => {
                     height: "40px",
                     borderRadius: "50%",
                     objectFit: "cover",
-                    border: "2px solid #ddd"
+                    border: "2px solid #ddd",
                   }}
                 />
               </Dropdown.Toggle>
@@ -62,13 +72,14 @@ const Header = () => {
             </Dropdown>
           </>
         ) : (
-          // Nếu chưa đăng nhập
           <>
-            <Button variant="outline-info" className="fw-semibold px-3">Sign-up</Button>
+            <Button variant="outline-info" className="fw-semibold px-3" onClick={handleSignUp}>
+              Sign-up
+            </Button>
             <Button
               variant="success"
               className="fw-semibold px-3 text-white"
-              onClick={() => setIsLoggedIn(true)}
+              onClick={handleJoin}
             >
               Join
             </Button>
@@ -77,6 +88,6 @@ const Header = () => {
       </Nav>
     </Navbar>
   );
-}
+};
 
 export default Header;
