@@ -36,7 +36,9 @@ const Header = () => {
             <Dropdown.Item href="#">Trending</Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
-
+        <Button variant="primary" onClick={() => navigate("/change-password")}>
+        Change Password
+      </Button>
         {isLoggedIn ? (
           <>
             <span className="fw-semibold">Welcome, {user.name}</span>

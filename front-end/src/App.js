@@ -6,6 +6,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import Register from './pages/Register';
 import Login from './pages/Login';
+import ChangePassword from './pages/ChangePassword';
 function App() {
     return (
         <BrowserRouter>
@@ -16,6 +17,7 @@ function App() {
                     <Route path="/register" element={<Register />} />
                     {/* <Route path="active-account/:token" element={<Page.ActiveAccount />} />
                     <Route path="/forgot-password" ></Route> */}
+                    <Route path="/change-password" element={<ChangePassword />} />
                     <Route path="/login" element={<Login />} />
                 </Routes>
                 <Footer />
