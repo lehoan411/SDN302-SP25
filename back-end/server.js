@@ -16,7 +16,10 @@ const app = express();
 
 // Them cac middlewares kiem soat cac requests, responses
 app.use(morgan("dev"));
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:3000", // Đảm bảo đúng với URL frontend
+    credentials: true,  // QUAN TRỌNG: Cho phép gửi cookie
+  }));
 app.use(bodyParser.json());
 
 // Dinh tuyen tai cap do root (root router)
@@ -46,4 +49,3 @@ app.listen(port, hostname, () => {
     console.log(`Server running at: http://${hostname}:${port}`); 
     db.connectDB();
 });
-

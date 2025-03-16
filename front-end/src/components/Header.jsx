@@ -1,57 +1,49 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { Navbar, Nav, Button, Dropdown, Form } from "react-bootstrap";
-import { Link } from "react-router-dom";
+
+import React, { useState } from "react";
+import { Navbar, Nav, Button, Dropdown } from "react-bootstrap";
+import { Link, useNavigate } from "react-router-dom";
 
 const Header = () => {
-  const [userId, setUserId] = useState(localStorage.getItem("userId") || "");
-  const [user, setUser] = useState(null); // Thông tin user
-  const [inputUserId, setInputUserId] = useState(""); // Giá trị nhập vào
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Mặc định chưa đăng nhập
+  const navigate = useNavigate();
 
-  // Gọi API để lấy thông tin user nếu có userId
-  useEffect(() => {
-    fetchUserData();
-  }, [userId]);
+  const [user] = useState({
+    name: "John Doe",
+    avatar: "https://i.pravatar.cc/40?img=3", // Avatar người dùng
+  });
 
-  const fetchUserData = async () => {
-    if (!userId) return;
-    try {
-      const response = await axios.get(`http://localhost:9999/users/${userId}`);
-      setUser(response.data);
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
-  }
-
-  // Khi ấn "Join", lưu userId vào localStorage và cập nhật state
   const handleJoin = () => {
-    if (inputUserId.trim() !== "") {
-      localStorage.setItem("userId", inputUserId);
-      setUserId(inputUserId);
-    }
+    navigate("/login"); // Chuyển hướng sang trang Login khi ấn Join
   };
 
-  // Khi ấn "Logout", xóa userId khỏi localStorage và cập nhật state
-  const handleLogout = () => {
-    localStorage.removeItem("userId");
-    setUserId("");
-    setUser(null);
+  const handleSignUp = () => {
+    navigate("/register"); // Chuyển hướng sang trang Register khi ấn Sign-up
   };
 
   return (
     <Navbar bg="light" expand="lg" className="px-4 py-2 shadow-sm">
-      {/* Logo */}
-      <Navbar.Brand href="/" className="fw-bold fs-4">Get Images</Navbar.Brand>
+      <Navbar.Brand as={Link} to="/" className="fw-bold fs-4">
+        Get Images
+      </Navbar.Brand>
 
-      {/* Navigation */}
       <Nav className="ms-auto d-flex align-items-center gap-3">
-        {user ? (
-          // Nếu đã đăng nhập
+        <Dropdown>
+          <Dropdown.Toggle variant="light" id="dropdown-basic" className="fw-medium border-0">
+            Explore
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <Dropdown.Item href="#">Popular</Dropdown.Item>
+            <Dropdown.Item href="#">New</Dropdown.Item>
+            <Dropdown.Item href="#">Trending</Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+        <Button variant="primary" onClick={() => navigate("/change-password")}>
+        Change Password
+      </Button>
+        {isLoggedIn ? (
           <>
-            {/* Welcome Message & Avatar */}
             <span className="fw-semibold">Welcome, {user.name}</span>
 
-            {/* User Dropdown */}
             <Dropdown align="end">
               <Dropdown.Toggle
                 variant="light"
@@ -59,14 +51,14 @@ const Header = () => {
                 style={{ background: "none" }}
               >
                 <img
-                  src={user.avatar || "https://i.pravatar.cc/40"} // Avatar mặc định nếu không có
+                  src={user.avatar}
                   alt="User Avatar"
                   style={{
                     width: "40px",
                     height: "40px",
                     borderRadius: "50%",
                     objectFit: "cover",
-                    border: "2px solid #ddd"
+                    border: "2px solid #ddd",
                   }}
                 />
               </Dropdown.Toggle>
@@ -75,20 +67,21 @@ const Header = () => {
                 <Dropdown.Item as={Link} to="/profile">Profile</Dropdown.Item>
                 <Dropdown.Item as={Link} to="/profile/edit-profile">Edit Profile</Dropdown.Item>
                 <Dropdown.Divider />
-                <Dropdown.Item onClick={handleLogout}>Logout</Dropdown.Item>
+                <Dropdown.Item onClick={() => setIsLoggedIn(false)}>Logout</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
           </>
         ) : (
-          // Nếu chưa đăng nhập
           <>
-            {/* Input nhập userId */}
-            <Button variant="warning" className="fw-semibold px-3 text-white">
-              Register
+            <Button variant="outline-info" className="fw-semibold px-3" onClick={handleSignUp}>
+              Sign-up
             </Button>
-            {/* Nút Join để lưu userId vào localStorage */}
-            <Button variant="success" className="fw-semibold px-3 text-white" onClick={handleJoin}>
-              Login
+            <Button
+              variant="success"
+              className="fw-semibold px-3 text-white"
+              onClick={handleJoin}
+            >
+              Join
             </Button>
           </>
         )}

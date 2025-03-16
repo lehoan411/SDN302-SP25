@@ -1,0 +1,28 @@
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.9em;
+  text-align: center;
+
+  &.admin {
+    background-color: #ff7f50;
+  }
+
+  &.member {
+    background-color: #87ceeb;
+  }
+
+  &.vip {
+    background-color: red;
+  }
+}
+
+.dot-action {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  font-size: 20px;
+}

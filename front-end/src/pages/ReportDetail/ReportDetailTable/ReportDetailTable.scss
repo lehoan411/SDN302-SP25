@@ -1,0 +1,24 @@
+.report-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+
+  th,
+  td {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+  }
+
+  th {
+    background-color: #f4f4f4;
+  }
+
+  td button {
+    font-size: 16px;
+  }
+
+  .reason {
+    max-width: 500px;
+    word-wrap: break-word;
+  }
+}
