@@ -5,8 +5,8 @@ const { v4: uuidv4 } = require("uuid");
 const db = require("../models/index");
 const jwt = require("jsonwebtoken");
 
-const userRouter = express.Router();
-userRouter.use(bodyParser.json());
+const AuthRouter = express.Router();
+AuthRouter.use(bodyParser.json());
 
 const getRoles = async (roleName) => {
   let role = await db.role.findOne({ name: roleName }).select("_id");
@@ -15,7 +15,7 @@ const getRoles = async (roleName) => {
   }
   return role;
 };
-userRouter.post("/sign-up", async (req, res) => {
+AuthRouter.post("/sign-up", async (req, res) => {
   try {
     const { name, email, password, confirmPassword } = req.body;
 
@@ -63,7 +63,7 @@ userRouter.post("/sign-up", async (req, res) => {
 
 
 
-userRouter.post("/sign-in", async (req, res) => {
+AuthRouter.post("/sign-in", async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -71,7 +71,7 @@ userRouter.post("/sign-in", async (req, res) => {
       return res.status(422).json({ status: 422, message: "Missing input(s)" });
     }
 
-    const existUser = await db.user.findOne({ email }).populate("roles");
+    const existUser = await db.user.findOne({ email });
     if (!existUser) {
       return res.status(401).json({ message: "Email or password is wrong" });
     }
@@ -81,28 +81,13 @@ userRouter.post("/sign-in", async (req, res) => {
       return res.status(401).json({ message: "Wrong email or password" });
     }
 
-    // Tạo token JWT
-    const payload = {
-      _id: existUser._id,
-      name: existUser.name,
-      email: existUser.email,
-      roles: existUser.roles,
-      avatar: existUser.avatar,
-    };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
+    // Chỉ mã hóa userId trong token
+    const token = jwt.sign({ userId: existUser._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-    res.cookie("jwt", token, {
-      httpOnly: true,
-      secure: false,   // Để false trên localhost, true nếu chạy HTTPS
-      sameSite: "Lax", // Nếu backend & frontend KHÁC DOMAIN, đổi thành "None"
-      maxAge: 24 * 60 * 60 * 1000, // 1 ngày
-    });
-    
     return res.status(200).json({
       status: 200,
       message: "Authenticated successfully!",
-      data: payload,
-      token,
+      token, // Trả token về frontend
     });
 
   } catch (error) {
@@ -112,22 +97,4 @@ userRouter.post("/sign-in", async (req, res) => {
 });
 
 
-// Các route khác (có thể mở lại khi cần)
-
-// userRouter.get("/logout", async (req, res) => {
-//   res.status(501).json({ message: "Not implemented" });
-// });
-// userRouter.get("/:userId", async (req, res) => {
-//   res.status(501).json({ message: "Not implemented" });
-// });
-// userRouter.get("/", async (req, res) => {
-//   res.status(501).json({ message: "Not implemented" });
-// });
-// userRouter.patch("/:id", async (req, res) => {
-//   res.status(501).json({ message: "Not implemented" });
-// });
-// userRouter.post("/active-account", async (req, res) => {
-//   res.status(501).json({ message: "Not implemented" });
-// });
-
-module.exports = userRouter; // Xuất trực tiếp thay vì object
+module.exports = AuthRouter; // Xuất trực tiếp thay vì object

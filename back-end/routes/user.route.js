@@ -29,10 +29,10 @@ UserRouter.get('/', async (req, res, next) => {
     }
 })
 
-UserRouter.get('/:userId', async (req, res) => {
-    const { userId } = req.params;
+UserRouter.get('/get-by-id', async (req, res) => {
+    const id  = req.payload.id;
     try {
-        const user = await db.user.findById(userId).populate('albums').populate('favorited');
+        const user = await db.user.findById(id).populate('albums').populate('favorited');
         res.status(200).json(user);
     } catch (error) {
         res.status(400).json({ message: error });

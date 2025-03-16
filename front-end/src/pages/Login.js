@@ -17,9 +17,14 @@ function Login() {
     }
 
     try {
-      const response = await axios.post("http://localhost:9999/users/sign-in", { email, password }, { withCredentials: true });
+      const response = await axios.post("http://localhost:9999/auth/sign-in", { email, password });
 
       if (response.status === 200) {
+        const { token } = response.data;
+
+        // Lưu token vào localStorage
+        localStorage.setItem("token", token);
+
         toast.success("Login successful!");
         navigate("/");
       }
