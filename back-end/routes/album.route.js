@@ -68,7 +68,9 @@ AlbumRouter.post("/create", checkUserJWT, upload.single("albumImage"), async (re
                     return res.status(500).json({ message: "Failed to upload image" });
                 }
             } catch (error) {
-                return res.status(500).json({ message: "Image upload error" });
+                console.error("Cloudinary Upload Error:", error);
+                fs.unlink(file.path, () => { });
+                return res.status(500).json({ message: "Error when create album" });
             }
         }
 
@@ -115,6 +117,8 @@ AlbumRouter.put("/:albumId/edit-album", checkUserJWT, upload.single("albumImage"
                     return res.status(500).json({ message: "Failed to upload image" });
                 }
             } catch (error) {
+                console.error("Cloudinary Upload Error:", error);
+                fs.unlink(file.path, () => { });
                 return res.status(500).json({ message: "Image upload error" });
             }
         }

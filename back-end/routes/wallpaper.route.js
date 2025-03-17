@@ -68,13 +68,21 @@ WallpaperRouter.post("/create", checkUserJWT, upload.single("imageUrl"), async (
             return res.status(400).json({ message: "No image file uploaded" });
         }
 
-        // Tải ảnh lên Cloudinary
-        const result = await cloudinary.uploader.upload(req.file.path);
-        if (result && result.secure_url) {
-            imageUrl = result.secure_url;
-            fs.unlink(req.file.path, () => {});
-        } else {
-            return res.status(500).json({ message: "Failed to upload image" });
+        try {
+
+
+            // Tải ảnh lên Cloudinary
+            const result = await cloudinary.uploader.upload(req.file.path);
+            if (result && result.secure_url) {
+                imageUrl = result.secure_url;
+                fs.unlink(req.file.path, () => { });
+            } else {
+                return res.status(500).json({ message: "Failed to upload image" });
+            }
+        } catch (error) {
+            console.error("Cloudinary Upload Error:", error);
+            fs.unlink(file.path, () => { });
+            return res.status(500).json({ message: "Image upload error" });
         }
 
         // Tạo ảnh mới
@@ -112,10 +120,16 @@ WallpaperRouter.put("/:wallpaperId/edit-wallpaper", checkUserJWT, upload.single(
         let newWallpaperImage = wallpaper.imageUrl;
 
         if (req.file) {
-            const result = await cloudinary.uploader.upload(req.file.path);
-            if (result && result.secure_url) {
-                newWallpaperImage = result.secure_url;
-                fs.unlink(req.file.path, () => {});
+            try {
+                const result = await cloudinary.uploader.upload(req.file.path);
+                if (result && result.secure_url) {
+                    newWallpaperImage = result.secure_url;
+                    fs.unlink(req.file.path, () => { });
+                }
+            } catch (error) {
+                console.error("Cloudinary Upload Error:", error);
+                fs.unlink(req.file.path, () => { });
+                return res.status(500).json({ message: "Fail to update image. Try again!" });
             }
         }
 
@@ -216,7 +230,7 @@ WallpaperRouter.delete("/:wallpaperId/comment/:commentId/delete", checkUserJWT, 
             return res.status(404).json({ message: "Wallpaper not found" });
         }
 
-        wallpaper.comments = wallpaper.comments.filter(comment => 
+        wallpaper.comments = wallpaper.comments.filter(comment =>
             comment._id.toString() !== req.params.commentId || comment.user.toString() !== userId
         );
 

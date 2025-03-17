@@ -78,7 +78,7 @@ UserRouter.put("/edit-profile", checkUserJWT, upload.single("avatar"), async (re
             } catch (error) {
                 console.error("Cloudinary Upload Error:", error);
                 fs.unlink(req.file.path, () => {});
-                return res.status(500).json({ message: "Image capacity is too large!" });
+                return res.status(500).json({ message: "Fail to update profile. Try again!" });
             }
         }
 
