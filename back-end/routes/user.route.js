@@ -1,18 +1,20 @@
-const express = require('express');
+const express = require("express");
 const bodyParser = require("body-parser");
 const UserRouter = express.Router();
-const db = require('../models');
-UserRouter.use(bodyParser.json());
-const mongoose = require('mongoose')
-const  cloudinary  = require('../configs/cloudinary');
-const fs = require('fs');
+const { checkUserJWT } = require("../middlewares/JsonWebToken");
+const User = require("../models/user");
+const cloudinary = require("../configs/cloudinary");
+const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
 
+UserRouter.use(bodyParser.json());
+
+// Cấu hình upload file
 const upload = multer({
     storage: multer.diskStorage({
         destination: function (req, file, cb) {
-            cb(null, 'uploads');
+            cb(null, "uploads");
         },
         filename: function (req, file, cb) {
             cb(null, Date.now() + path.extname(file.originalname));
@@ -20,39 +22,47 @@ const upload = multer({
     }),
 });
 
-UserRouter.get('/', async (req, res, next) => {
+// ✅ API: Lấy danh sách tất cả user (Admin)
+UserRouter.get("/", checkUserJWT, async (req, res) => {
     try {
-        const user = await db.user.find().populate('albums').populate('favorited');
+        const users = await User.find().populate("albums").populate("favorited");
+        res.status(200).json(users);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+// ✅ API: Lấy thông tin user từ token
+UserRouter.get("/get-by-id", checkUserJWT, async (req, res) => {
+    try {
+        const userId = req.user.userId; // Lấy userId từ token
+        const user = await User.findById(userId).populate("albums").populate("favorited");
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
         res.status(200).json(user);
     } catch (error) {
-        res.status(400).json({ message: error });
+        res.status(400).json({ message: error.message });
     }
-})
+});
 
-UserRouter.get('/:userId', async (req, res) => {
-    const { userId } = req.params;
-    try {
-        const user = await db.user.findById(userId).populate('albums').populate('favorited');
-        res.status(200).json(user);
-    } catch (error) {
-        res.status(400).json({ message: error });
-    }
-})
-
-UserRouter.put('/:userId/edit-profile', upload.single('avatar'), async (req, res) => {
+// ✅ API: Cập nhật hồ sơ user (Lấy userId từ token)
+UserRouter.put("/edit-profile", checkUserJWT, upload.single("avatar"), async (req, res) => {
     try {
         console.log("Req file:", req.file);
         const { name, bio, dob } = req.body;
-        const { userId } = req.params;
-        const user = await db.user.findById(userId);
+        const userId = req.user.userId; // Lấy userId từ token
+        const user = await User.findById(userId);
 
         if (!user) {
-            return res.status(400).json({ message: "User not found" });
+            return res.status(404).json({ message: "User not found" });
         }
 
         let newAvatarUrl = user.avatar; // Giữ nguyên ảnh cũ nếu không upload ảnh mới
 
-        // Kiểm tra nếu có ảnh được tải lên
+        // Nếu có ảnh mới, upload lên Cloudinary
         if (req.file) {
             try {
                 const result = await cloudinary.uploader.upload(req.file.path);
@@ -67,27 +77,18 @@ UserRouter.put('/:userId/edit-profile', upload.single('avatar'), async (req, res
                 }
             } catch (error) {
                 console.error("Cloudinary Upload Error:", error);
-                fs.unlink(req.file.path, () => { });
+                fs.unlink(req.file.path, () => {});
                 return res.status(500).json({ message: "Image capacity is too large!" });
             }
         }
 
         // Cập nhật thông tin user
-        const newUserInfo = {
-            name: name,
-            bio: bio,
-            dob: dob,
-            avatar: newAvatarUrl
-        };
-        
-
-        // Lưu user vào database
-        const updatedProfile = await db.user.findByIdAndUpdate(userId, {
+        const updatedProfile = await User.findByIdAndUpdate(userId, {
             $set: {
-                name: newUserInfo.name,
-                bio: newUserInfo.bio,
-                dob: newUserInfo.dob,
-                avatar: newUserInfo.avatar
+                name: name,
+                bio: bio,
+                dob: dob,
+                avatar: newAvatarUrl
             }
         }, { new: true });
 
@@ -99,5 +100,22 @@ UserRouter.put('/:userId/edit-profile', upload.single('avatar'), async (req, res
     }
 });
 
+// ✅ API: Xóa tài khoản user (User có thể tự xóa)
+UserRouter.delete("/delete-account", checkUserJWT, async (req, res) => {
+    try {
+        const userId = req.user.userId; // Lấy userId từ token
+
+        const user = await User.findByIdAndDelete(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({ message: "User deleted successfully" });
+
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
 
 module.exports = UserRouter;

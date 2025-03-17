@@ -3,27 +3,23 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
 import "react-toastify/dist/ReactToastify.css";
-import Home from './components/Home';
+
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
-import { ToastContainer } from 'react-toastify';
-import AccountManagement from "./pages/AccountManagement/AccountManagement";
-import ReportList from "./pages/ReportList/ReportList";
-import ReportDetail from "./pages/ReportDetail/ReportDetail";
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Container } from 'react-bootstrap';
-
-import Header from './components/Header';
-import Footer from './components/Footer';
 import Home from './pages/Home/Home';
 import WallpaperDetail from './pages/WallpaperDetail/WallpaperDetail';
 import Profile from './pages/Profile/Profile';
 import AlbumWallpaper from './pages/AlbumWallpaper/AlbumWallpaper';
 import EditProfile from './pages/Profile/EditProfile';
+import { ToastContainer } from 'react-toastify';
+import AccountManagement from "./pages/AccountManagement/AccountManagement";
+import ReportList from "./pages/ReportList/ReportList";
+import ReportDetail from "./pages/ReportDetail/ReportDetail";
+
+
 
 function App() {
     return (

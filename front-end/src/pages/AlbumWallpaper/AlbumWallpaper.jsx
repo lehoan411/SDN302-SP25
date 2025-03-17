@@ -15,28 +15,28 @@ const AlbumWallpaper = () => {
   const [imageFile, setImageFile] = useState(null);
   const [imageInfo, setImageInfo] = useState({ description: "", tags: "" });
   const [previewImage, setPreviewImage] = useState(null);
-  const userId = localStorage.getItem("userId");
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
     fetchData();
   }, [albumId]);
-  
-  const fetchData = () => {
-    axios
-      .get(`http://localhost:9999/albums/${albumId}`)
-      .then((response) => setAlbum(response.data))
-      .catch((error) => console.error("Error fetching album data:", error));
 
-    axios
-      .get(`http://localhost:9999/wallpapers`)
-      .then((response) => {
-        const filteredWallpapers = response.data.filter(wp => wp.fromAlbum?._id === albumId);
-        setWallpapers(filteredWallpapers);
-      })
-      .catch((error) => console.error("Error fetching wallpapers:", error));
+  const fetchData = async () => {
+    try {
+      const albumResponse = await axios.get(`http://localhost:9999/albums/${albumId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setAlbum(albumResponse.data);
+
+      const wallpapersResponse = await axios.get(`http://localhost:9999/wallpapers`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const filteredWallpapers = wallpapersResponse.data.filter((wp) => wp.fromAlbum?._id === albumId);
+      setWallpapers(filteredWallpapers);
+    } catch (error) {
+      console.error("Error fetching album or wallpapers:", error);
+    }
   };
-
-  
 
   const handleUploadClick = () => {
     setModalType("upload");
@@ -55,13 +55,10 @@ const AlbumWallpaper = () => {
     setShowModal(true);
   };
 
-  // Xử lý khi chọn ảnh mới
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
       setImageFile(file);
-
-      // Hiển thị ảnh trước khi upload
       const reader = new FileReader();
       reader.onload = (e) => setPreviewImage(e.target.result);
       reader.readAsDataURL(file);
@@ -69,33 +66,41 @@ const AlbumWallpaper = () => {
   };
 
   const handleSaveImage = async () => {
+    if (!token) {
+      alert("Please login to perform this action.");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("albumId", albumId);
     formData.append("description", imageInfo.description);
     formData.append("tags", imageInfo.tags);
-    formData.append("userId", userId)
 
     try {
+      let response;
       if (modalType === "upload" && imageFile) {
         formData.append("imageUrl", imageFile);
-
-        const response = await axios.post(`http://localhost:9999/wallpapers/create`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+        response = await axios.post(`http://localhost:9999/wallpapers/create`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
         });
         setWallpapers([...wallpapers, response.data]);
-        alert("Upload image successfully!");
+        alert("Image uploaded successfully!");
       } else if (modalType === "edit" && selectedImage) {
         if (imageFile) formData.append("imageUrl", imageFile);
-
-        const response = await axios.put(`http://localhost:9999/wallpapers/${selectedImage._id}/edit-wallpaper`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+        response = await axios.put(`http://localhost:9999/wallpapers/${selectedImage._id}/edit-wallpaper`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
         });
-
-        setWallpapers(wallpapers.map(wp => wp._id === selectedImage._id ? response.data.wallpaper : wp));
-        alert("Edit image successfully!");
+        setWallpapers(wallpapers.map((wp) => (wp._id === selectedImage._id ? response.data : wp)));
+        alert("Image updated successfully!");
       }
     } catch (error) {
-      alert("Failed to process image. Please try again!")
+      alert("Failed to process image. Please try again!");
       console.error("Error saving image:", error);
     }
 
@@ -104,13 +109,15 @@ const AlbumWallpaper = () => {
   };
 
   const handleDeleteImage = async (imageId) => {
-    if (!window.confirm("Are you sure you want to delete this album? This action cannot be undone!")) {
+    if (!window.confirm("Are you sure you want to delete this image? This action cannot be undone!")) {
       return;
     }
     try {
-      await axios.delete(`http://localhost:9999/wallpapers/${imageId}/delete`);
+      await axios.delete(`http://localhost:9999/wallpapers/${imageId}/delete`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setWallpapers(wallpapers.filter((img) => img._id !== imageId));
-      alert("Delete image successfully!");
+      alert("Image deleted successfully!");
       fetchData();
     } catch (error) {
       alert("Failed to delete image. Please try again!");

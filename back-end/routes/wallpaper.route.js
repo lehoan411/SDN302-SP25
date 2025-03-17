@@ -1,17 +1,19 @@
-const express = require('express');
+const express = require("express");
 const bodyParser = require("body-parser");
-const db = require('../models');
-const cloudinary = require('../configs/cloudinary');
-const fs = require('fs');
-const WallpaperRouter = express.Router();
-WallpaperRouter.use(bodyParser.json());
+const { checkUserJWT } = require("../middlewares/JsonWebToken");
+const db = require("../models");
+const cloudinary = require("../configs/cloudinary");
+const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
+
+const WallpaperRouter = express.Router();
+WallpaperRouter.use(bodyParser.json());
 
 const upload = multer({
     storage: multer.diskStorage({
         destination: function (req, file, cb) {
-            cb(null, 'uploads');
+            cb(null, "uploads");
         },
         filename: function (req, file, cb) {
             cb(null, Date.now() + path.extname(file.originalname));
@@ -19,15 +21,13 @@ const upload = multer({
     }),
 });
 
-
-// Lấy tất cả ảnh
-WallpaperRouter.get('/', async (req, res) => {
+// ✅ Lấy tất cả ảnh
+WallpaperRouter.get("/", async (req, res) => {
     try {
-        const wallpapers = await db.wallpaper
-            .find()
-            .populate('createdBy')
-            .populate('fromAlbum')
-            .populate('comments.user')
+        const wallpapers = await db.wallpaper.find()
+            .populate("createdBy")
+            .populate("fromAlbum")
+            .populate("comments.user");
 
         res.status(200).json(wallpapers);
     } catch (error) {
@@ -35,15 +35,13 @@ WallpaperRouter.get('/', async (req, res) => {
     }
 });
 
-// Lấy ảnh theo ID
-WallpaperRouter.get('/:wallpaperId', async (req, res) => {
-    const { wallpaperId } = req.params;
+// ✅ Lấy ảnh theo ID
+WallpaperRouter.get("/:wallpaperId", async (req, res) => {
     try {
-        const wallpaper = await db.wallpaper
-            .findById(wallpaperId)
-            .populate('createdBy')
-            .populate('fromAlbum')
-            .populate('comments.user')
+        const wallpaper = await db.wallpaper.findById(req.params.wallpaperId)
+            .populate("createdBy")
+            .populate("fromAlbum")
+            .populate("comments.user");
 
         if (!wallpaper) {
             return res.status(404).json({ message: "Wallpaper not found" });
@@ -55,16 +53,15 @@ WallpaperRouter.get('/:wallpaperId', async (req, res) => {
     }
 });
 
-// Tạo ảnh mới và upload lên Cloudinary
-WallpaperRouter.post('/create', upload.single("imageUrl"), async (req, res) => {
+// ✅ Tạo ảnh mới (Lấy userId từ token)
+WallpaperRouter.post("/create", checkUserJWT, upload.single("imageUrl"), async (req, res) => {
     try {
-        console.log("Req file:", req.file);
-        const { albumId, userId, description, tags } = req.body;
+        const { albumId, description, tags } = req.body;
+        const userId = req.user.userId; // Lấy userId từ token
         let imageUrl = "";
 
-        // Kiểm tra thông tin đầu vào
-        if (!albumId || !userId) {
-            return res.status(400).json({ message: "Missing albumId or userId" });
+        if (!albumId) {
+            return res.status(400).json({ message: "Missing albumId" });
         }
 
         if (!req.file) {
@@ -75,196 +72,156 @@ WallpaperRouter.post('/create', upload.single("imageUrl"), async (req, res) => {
         const result = await cloudinary.uploader.upload(req.file.path);
         if (result && result.secure_url) {
             imageUrl = result.secure_url;
-            fs.unlink(req.file.path, (err) => { if (err) console.error("Error deleting local file:", err); });
+            fs.unlink(req.file.path, () => {});
         } else {
             return res.status(500).json({ message: "Failed to upload image" });
         }
 
         // Tạo ảnh mới
-        const newWallpaper = new db.wallpaper({
+        const newWallpaper = await db.wallpaper.create({
             imageUrl,
             description,
             tags: tags ? tags.split(",") : [],
             createdBy: userId,
             fromAlbum: albumId,
         });
-        await newWallpaper.save();
+
         await db.album.findByIdAndUpdate(albumId, { $push: { wallpapers: newWallpaper._id } });
+
         res.status(201).json(newWallpaper);
     } catch (error) {
-        console.error("Cloudinary Upload Error:", error);
-        fs.unlink(req.file.path, () => { });
-        return res.status(500).json({ message: "Cant't update profile! Try again." });
+        res.status(500).json({ message: "Can't upload image! Try again." });
     }
 });
 
-// Chỉnh sửa thông tin ảnh
-WallpaperRouter.put('/:wallpaperId/edit-wallpaper', upload.single("imageUrl"), async (req, res) => {
+// ✅ Chỉnh sửa ảnh (Chỉ cho phép chủ sở hữu)
+WallpaperRouter.put("/:wallpaperId/edit-wallpaper", checkUserJWT, upload.single("imageUrl"), async (req, res) => {
     try {
-        console.log("Req file:", req.file);
         const { description, tags } = req.body;
-        const { wallpaperId } = req.params;
-        const wallpaper = await db.wallpaper.findById(wallpaperId);
+        const userId = req.user.userId; // Lấy userId từ token
+        const wallpaper = await db.wallpaper.findById(req.params.wallpaperId);
 
         if (!wallpaper) {
-            return res.status(400).json({ message: "Wallpaper not found" });
+            return res.status(404).json({ message: "Wallpaper not found" });
         }
 
-        let newWallpaperImage = wallpaper.imageUrl; // Giữ nguyên ảnh cũ nếu không upload ảnh mới
+        if (wallpaper.createdBy.toString() !== userId) {
+            return res.status(403).json({ message: "Unauthorized: You can only edit your own wallpapers" });
+        }
 
-        // Kiểm tra nếu có ảnh được tải lên
+        let newWallpaperImage = wallpaper.imageUrl;
+
         if (req.file) {
-            try {
-                const result = await cloudinary.uploader.upload(req.file.path, {
-                    timeout: 60000, // Tăng timeout lên 60 giây
-                });
-
-                if (result && result.secure_url) {
-                    newWallpaperImage = result.secure_url;
-                    fs.unlink(req.file.path, (err) => {
-                        if (err) console.error("Error deleting local file:", err);
-                    });
-                } else {
-                    return res.status(500).json({ message: "Failed to upload image" });
-                }
-            } catch (error) {
-                console.error("Cloudinary Upload Error:", error);
-                fs.unlink(req.file.path, () => { });
-                return res.status(500).json({ message: "Image upload timeout. Try again with a smaller file." });
+            const result = await cloudinary.uploader.upload(req.file.path);
+            if (result && result.secure_url) {
+                newWallpaperImage = result.secure_url;
+                fs.unlink(req.file.path, () => {});
             }
         }
 
-        // Cập nhật thông tin wallpaper
-        const newWallpaperInfo = {
-            description: description,
-            imageUrl: newWallpaperImage,
-            tags: tags ? tags.split(",") : []
-        };
-        // Lưu wallpaper vào database
         const updatedWallpaper = await db.wallpaper.findByIdAndUpdate(
-            wallpaperId,
-            {
-                $set: {
-                    description: newWallpaperInfo.description,
-                    imageUrl: newWallpaperInfo.imageUrl,
-                    tags: newWallpaperInfo.tags
-                }
-            },
+            req.params.wallpaperId,
+            { $set: { description, imageUrl: newWallpaperImage, tags: tags ? tags.split(",") : [] } },
             { new: true }
         );
 
-        if (!updatedWallpaper) {
-            return res.status(404).json({ message: "Wallpaper not found" });
-        }
-
-        res.status(200).json({
-            message: "Wallpaper updated successfully",
-            wallpaper: updatedWallpaper
-        });
+        res.status(200).json(updatedWallpaper);
     } catch (error) {
-        console.error("Cloudinary Upload Error:", error);
-        fs.unlink(req.file.path, () => { });
-        return res.status(500).json({ message: "Image upload timeout. Try again with a smaller file." });
+        res.status(500).json({ message: error.message });
     }
 });
 
-WallpaperRouter.delete('/:wallpaperId/delete', async (req, res) => {
-    const { wallpaperId } = req.params;
+// ✅ Xóa ảnh (Chỉ cho phép chủ sở hữu)
+WallpaperRouter.delete("/:wallpaperId/delete", checkUserJWT, async (req, res) => {
     try {
-        const wallpaper = await db.wallpaper.findById(wallpaperId);
+        const userId = req.user.userId;
+        const wallpaper = await db.wallpaper.findById(req.params.wallpaperId);
+
         if (!wallpaper) {
             return res.status(404).json({ message: "Wallpaper not found" });
         }
-        await db.album.findByIdAndUpdate(wallpaper.fromAlbum, { $pull: { wallpapers: wallpaperId } });
-        await db.wallpaper.findByIdAndDelete(wallpaperId);
+
+        if (wallpaper.createdBy.toString() !== userId) {
+            return res.status(403).json({ message: "Unauthorized: You can only delete your own wallpapers" });
+        }
+
+        await db.album.findByIdAndUpdate(wallpaper.fromAlbum, { $pull: { wallpapers: wallpaper._id } });
+        await db.wallpaper.findByIdAndDelete(wallpaper._id);
+
         res.status(200).json({ message: "Wallpaper deleted successfully" });
-
     } catch (error) {
-        res.status(400).json({ message: error });
+        res.status(400).json({ message: error.message });
     }
-})
+});
 
-WallpaperRouter.post("/:wallpaperId/like", async (req, res) => {
+// ✅ Like/Unlike ảnh
+WallpaperRouter.post("/:wallpaperId/like", checkUserJWT, async (req, res) => {
     try {
-        const { userId } = req.body;
-        const {wallpaperId} = req.params;
-
+        const userId = req.user.userId;
+        const wallpaper = await db.wallpaper.findById(req.params.wallpaperId);
         const user = await db.user.findById(userId);
-        const wallpaper = await db.wallpaper.findById(wallpaperId);
 
         if (!user || !wallpaper) {
             return res.status(404).json({ message: "User or Wallpaper not found" });
         }
 
-        let isFavorited = user.favorited.includes(wallpaperId);
+        const isFavorited = user.favorited.includes(wallpaper._id);
 
         if (isFavorited) {
-            // Bỏ thích
-            user.favorited = user.favorited.filter(id => id.toString() !== wallpaperId);
+            user.favorited = user.favorited.filter(id => id.toString() !== wallpaper._id.toString());
             wallpaper.likes -= 1;
         } else {
-            // Thích
-            user.favorited.push(wallpaperId);
+            user.favorited.push(wallpaper._id);
             wallpaper.likes += 1;
         }
 
         await user.save();
         await wallpaper.save();
 
-        res.json({ 
-            likes: wallpaper.likes, 
-            favorited: user.favorited // Trả về danh sách ảnh đã thích của user
-        });
+        res.json({ likes: wallpaper.likes, favorited: user.favorited });
     } catch (error) {
-        console.error("Error handling like:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 });
 
-WallpaperRouter.post('/:wallpaperId/comment', async (req, res) => {
-    const { wallpaperId } = req.params;
-    const { userId, body } = req.body;
+// ✅ Bình luận ảnh
+WallpaperRouter.post("/:wallpaperId/comment", checkUserJWT, async (req, res) => {
     try {
+        const userId = req.user.userId;
         const newComment = {
             user: userId,
-            body,
+            body: req.body.body,
             date: Date.now(),
         };
+
         const updatedWallpaper = await db.wallpaper.findByIdAndUpdate(
-            wallpaperId,
+            req.params.wallpaperId,
             { $push: { comments: newComment } },
             { new: true }
-        ).populate('comments.user');
+        ).populate("comments.user");
+
         res.status(200).json(updatedWallpaper);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 });
 
-WallpaperRouter.put('/:wallpaperId/comment/:commentId/edit', async (req, res) => {
-    const { wallpaperId, commentId } = req.params;
-    const { body } = req.body;
+// ✅ Xóa bình luận (Chỉ cho phép chủ sở hữu)
+WallpaperRouter.delete("/:wallpaperId/comment/:commentId/delete", checkUserJWT, async (req, res) => {
     try {
-        const updatedWallpaper = await db.wallpaper.findOneAndUpdate(
-            { _id: wallpaperId, "comments._id": commentId },
-            { $set: { "comments.$.body": body } },
-            { new: true }
-        ).populate('comments.user');
-        res.status(200).json(updatedWallpaper);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
-});
+        const userId = req.user.userId;
+        const wallpaper = await db.wallpaper.findById(req.params.wallpaperId);
 
-WallpaperRouter.delete('/:wallpaperId/comment/:commentId/delete', async (req, res) => {
-    const { wallpaperId, commentId } = req.params;
-    try {
-        const updatedWallpaper = await db.wallpaper.findByIdAndUpdate(
-            wallpaperId,
-            { $pull: { comments: { _id: commentId } } },
-            { new: true }
-        ).populate('comments.user');
-        res.status(200).json(updatedWallpaper);
+        if (!wallpaper) {
+            return res.status(404).json({ message: "Wallpaper not found" });
+        }
+
+        wallpaper.comments = wallpaper.comments.filter(comment => 
+            comment._id.toString() !== req.params.commentId || comment.user.toString() !== userId
+        );
+
+        await wallpaper.save();
+        res.status(200).json(wallpaper);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }

@@ -10,8 +10,9 @@ const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [categories, setCategories] = useState(["All"]);
   const [favoritedImages, setFavoritedImages] = useState([]);
-  const userId = localStorage.getItem("userId");
   const navigate = useNavigate();
+
+  const token = localStorage.getItem("token");
 
   const handleNavigate = (e, wallpaperId) => {
     if (!e.target.closest("button")) {
@@ -20,64 +21,72 @@ const Home = () => {
   };
 
   useEffect(() => {
-    axios
-      .get("http://localhost:9999/wallpapers/")
-      .then((response) => {
+    const fetchWallpapers = async () => {
+      try {
+        const response = await axios.get("http://localhost:9999/wallpapers/", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         setWallpapers(response.data);
 
-        // Lấy tất cả các tags từ dữ liệu wallpaper và thiết lập chúng vào categories
         const allTags = response.data.reduce((acc, wallpaper) => {
           wallpaper.tags.forEach((tag) => {
-            if (!acc.includes(tag)) {
-              acc.push(tag);
-            }
+            if (!acc.includes(tag)) acc.push(tag);
           });
           return acc;
-        }, ["All"]); // "All" sẽ luôn là lựa chọn đầu tiên
+        }, ["All"]);
         setCategories(allTags);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Error fetching wallpapers:", error);
-      });
+      }
+    };
 
-    if (userId) {
-      axios
-        .get(`http://localhost:9999/users/${userId}`)
-        .then((response) => setFavoritedImages(response.data.favorited || []))
-        .catch((error) => console.error("Error fetching user data:", error));
-    }
-  }, [userId]);
+    const fetchUserFavorites = async () => {
+      if (token) {
+        try {
+          const response = await axios.get("http://localhost:9999/users/get-by-id", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setFavoritedImages(response.data.favorited || []);
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+        }
+      }
+    };
+
+    fetchWallpapers();
+    fetchUserFavorites();
+  }, [token]);
 
   const handleLike = async (wallpaperId) => {
-    if (!userId) {
+    if (!token) {
       alert("Please login to use this function!");
       return;
     }
 
     try {
-      const response = await axios.post(`http://localhost:9999/wallpapers/${wallpaperId}/like`, { userId });
-
-      //  Cập nhật danh sách ảnh favoritedImages một cách chính xác
-      setFavoritedImages((prev) =>
-        prev.some((w) => w._id === wallpaperId)
-          ? prev.filter((w) => w._id !== wallpaperId) // Nếu đã tym rồi thì bỏ tym
-          : [...prev, { _id: wallpaperId }] // Nếu chưa tym thì thêm vào danh sách
+      const response = await axios.post(
+        `http://localhost:9999/wallpapers/${wallpaperId}/like`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      //  Cập nhật trực tiếp trạng thái yêu thích của ảnh trong danh sách wallpapers
+      setFavoritedImages((prev) =>
+        prev.some((w) => w._id === wallpaperId)
+          ? prev.filter((w) => w._id !== wallpaperId)
+          : [...prev, { _id: wallpaperId }]
+      );
+
       setWallpapers((prev) =>
         prev.map((wp) =>
           wp._id === wallpaperId ? { ...wp, likes: response.data.likes } : wp
         )
       );
-
     } catch (error) {
       console.error("Error when liking image:", error);
     }
   };
-  const isFavorited = (wallpaperId) => {
-    return favoritedImages.some((w) => w._id === wallpaperId);
-  };
+
+  const isFavorited = (wallpaperId) => favoritedImages.some((w) => w._id === wallpaperId);
 
   const filteredWallpapers = wallpapers.filter((wallpaper) => {
     const matchesSearch = wallpaper.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -86,6 +95,10 @@ const Home = () => {
   });
 
   const handleDownload = async (imageUrl, description) => {
+    if (!token) {
+      alert('Please Login to download this image!');
+      return;
+    }
     try {
       const response = await fetch(imageUrl);
       const blob = await response.blob();
@@ -98,7 +111,6 @@ const Home = () => {
       link.click();
       document.body.removeChild(link);
 
-      // Giải phóng URL object để tránh rò rỉ bộ nhớ
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error("Error downloading the image:", error);
@@ -108,7 +120,7 @@ const Home = () => {
   return (
     <div className={styles.container}>
       {/* Banner */}
-      <div className={styles.banner} style={{ backgroundImage: "url('/background.jpg')" }}>
+      <div className={styles.banner} style={{ backgroundImage: "url('/homeBackground.jpg')" }}>
         <h2>The best free images shared by creators.</h2>
         <input
           type="text"
@@ -135,7 +147,6 @@ const Home = () => {
       {/* Danh sách ảnh */}
       <div className={styles.wallpaperGrid}>
         {filteredWallpapers.map((wallpaper) => (
-
           <div
             key={wallpaper._id}
             className={styles.wallpaperCard}
@@ -148,7 +159,7 @@ const Home = () => {
               {/* Yêu thích */}
               <button className={styles.iconButton} onClick={(e) => {
                 e.stopPropagation();
-                handleLike(wallpaper._id)
+                handleLike(wallpaper._id);
               }}>
                 {isFavorited(wallpaper._id) ? (
                   <HeartFilled style={{ fontSize: "18px", color: "red" }} />
@@ -162,7 +173,7 @@ const Home = () => {
                 <button className={styles.downloadButton}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDownload(wallpaper.imageUrl, wallpaper.description)
+                    handleDownload(wallpaper.imageUrl, wallpaper.description);
                   }}
                 >Download</button>
                 <div className={styles.userInfo}>
@@ -176,12 +187,10 @@ const Home = () => {
                   ) : (
                     <UserOutlined style={{ fontSize: "24px", color: "#aaa" }} />
                   )}
-
                 </div>
               </div>
             </div>
           </div>
-
         ))}
       </div>
     </div>
