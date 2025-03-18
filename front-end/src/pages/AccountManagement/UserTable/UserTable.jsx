@@ -32,7 +32,9 @@ const UserTable = () => {
             Date Of Birth
           </th>
           <th>Role</th>
+          <th>Active</th>
           <th>Block</th>
+          <th>Up/Down Vip </th>
         </tr>
       </thead>
       <tbody>

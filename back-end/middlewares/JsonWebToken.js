@@ -26,12 +26,19 @@ const checkUserJWT = (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-  if (req.user && req.user.roles.some((role) => role.name === "admin")) {
-    next();
+  if (!req.user || !req.user.roles) {
+    return res.status(403).json({
+      errorCode: 403,
+      message: "Authorization Failed: User roles missing",
+    });
+  }
+
+  if (req.user.roles === "admin") {
+    return next();
   } else {
     return res.status(403).json({
       errorCode: 403,
-      message: "Authorization Failed, Not Admin",
+      message: "Authorization Failed: Not Admin",
     });
   }
 };

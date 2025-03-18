@@ -9,8 +9,8 @@ const ReportDetailRow = ({ report, index }) => {
         <Link to={`/wallpaper/${report.wallpaper._id}`}>Link</Link>
       </td>
       <td>{report.reason}</td>
-      <td>{report.wallpaper.createdBy.name}</td>
-      <td>{report.reporter.name}</td>
+      <td>{report.wallpaper.createdBy.name} ({report.wallpaper.createdBy.mail})</td>
+      <td>{report.reporter.name} ({report.reporter.mail})</td>
     </tr>
   );
 };
