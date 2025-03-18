@@ -1,7 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const UserRouter = express.Router();
-const { checkUserJWT } = require("../middlewares/JsonWebToken");
+const { checkUserJWT, isAdmin } = require("../middlewares/JsonWebToken");
 const User = require("../models/user");
 const cloudinary = require("../configs/cloudinary");
 const fs = require("fs");
@@ -22,12 +22,16 @@ const upload = multer({
     }),
 });
 
-// ✅ API: Lấy danh sách tất cả user (Admin)
-UserRouter.get("/", checkUserJWT, async (req, res) => {
+// ✅ API: Lấy danh sách tất cả user, trừ admin (Admin)
+UserRouter.get("/", checkUserJWT, isAdmin, async (req, res) => {
     try {
-        const users = await User.find().populate("albums").populate("favorited");
+        const users = await User.find({ roles: { $ne: "admin" } }) // Exclude admins
+            .populate("albums")
+            .populate("favorited");
+
         res.status(200).json(users);
     } catch (error) {
+        console.error("Error fetching users:", error);
         res.status(400).json({ message: error.message });
     }
 });
@@ -115,6 +119,107 @@ UserRouter.delete("/delete-account", checkUserJWT, async (req, res) => {
     } catch (error) {
         console.error("Error deleting user:", error);
         res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// Block user (inactive)
+UserRouter.patch("/block/:id", async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const { status } = req.body;
+
+        console.log("Received Status:", status);
+
+        if (!["active", "inactive"].includes(status)) {
+            return res.status(400).json({ message: "Invalid status value" });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { $set: { status: "inactive" } },
+            { new: true }
+        ).populate("roles", "-_id");
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found or no changes made" });
+        }
+
+        res.status(200).json({ message: "User status updated successfully", data: updatedUser });
+    } catch (error) {
+        console.error("Error updating user status:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
+// Activate user (set status to "active")
+UserRouter.patch("/activate/:id", async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const { status } = req.body;
+
+        console.log("Received Status:", status);
+
+        if (!["active", "inactive"].includes(status)) {
+            return res.status(400).json({ message: "Invalid status value" });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { $set: { status: "active" } },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found or no changes made" });
+        }
+
+        res.status(200).json({ message: "User activated successfully", data: updatedUser });
+    } catch (error) {
+        console.error("Error activating user:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
+UserRouter.patch("/upgrade/:id", async (req, res) => {
+    try {
+        const userId = req.params.id;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { $set: { roles: "user Vip" } },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found or no changes made" });
+        }
+
+        res.status(200).json({ message: "User upgraded to VIP successfully", data: updatedUser });
+    } catch (error) {
+        console.error("Error upgrading user:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
+// Downgrade "user Vip" to "user"
+UserRouter.patch("/downgrade/:id", async (req, res) => {
+    try {
+        const userId = req.params.id;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { $set: { roles: "user" } },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found or no changes made" });
+        }
+
+        res.status(200).json({ message: "User downgraded to normal user successfully", data: updatedUser });
+    } catch (error) {
+        console.error("Error downgrading user role:", error);
+        res.status(500).json({ message: "Internal Server Error" });
     }
 });
 

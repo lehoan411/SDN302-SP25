@@ -3,35 +3,9 @@ import UserTable from "./UserTable/UserTable";
 import SearchBar from "./SearchBar/SearchBar";
 import Pagination from "./Pagination/Pagination";
 import "./AccountManagement.scss";
+import axios from "axios";
 
 export const Context = createContext();
-
-const fakeUsers = [
-  {
-    _id: "1",
-    name: "John Doe",
-    email: "john@example.com",
-    dob: "1990-05-15",
-    roles: [{ name: "admin" }],
-    isActived: true,
-  },
-  {
-    _id: "2",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    dob: "1995-08-20",
-    roles: [{ name: "vip" }],
-    isActived: false,
-  },
-  {
-    _id: "3",
-    name: "Bob Johnson",
-    email: "bob@example.com",
-    dob: "1988-11-10",
-    roles: [{ name: "member" }],
-    isActived: true,
-  },
-];
 
 const AccountManagement = () => {
   const [defaultUsers, setDefaultUsers] = useState([]);
@@ -39,10 +13,25 @@ const AccountManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "ascending" });
 
+  const getAllUser = async () => {
+    try {
+      const response = await axios.get("http://localhost:9999/users/", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`, // Ensure authentication if needed
+        },
+      });
+
+      if (response.data) {
+        setDefaultUsers(response.data);
+        setUsers(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
   useEffect(() => {
-    // Using fake data instead of API call
-    setDefaultUsers(fakeUsers);
-    setUsers(fakeUsers);
+    getAllUser();
   }, []);
 
   const usersPerPage = 10;
