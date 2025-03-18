@@ -7,7 +7,7 @@ const WallpaperRouter = require("./routes/wallpaper.route");
 const UserRouter = require("./routes/user.route");
 const AlbumRouter = require("./routes/album.route");
 const ReportRouter = require("./routes/report.route");
-const AuthRouter = require("./routes/auth.route")
+const AuthRouter = require("./routes/auth.route");
 const cors = require("cors");
 require("dotenv").config();
 

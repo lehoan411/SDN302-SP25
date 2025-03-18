@@ -1,28 +1,73 @@
-.badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  color: white;
-  font-size: 0.9em;
-  text-align: center;
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 
-  &.admin {
-    background-color: #ff7f50;
+  th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
   }
 
-  &.member {
-    background-color: #87ceeb;
+  thead {
+    background: #f4f4f4;
+
+    th {
+      cursor: pointer;
+      user-select: none;
+      font-weight: 600;
+      transition: all 0.2s ease-in-out;
+
+      &:hover {
+        background: #e0e0e0;
+      }
+    }
   }
 
-  &.vip {
-    background-color: red;
-  }
-}
+  tbody {
+    tr {
+      transition: all 0.2s ease-in-out;
 
-.dot-action {
-  position: relative;
-  cursor: pointer;
-  user-select: none;
-  font-weight: 600;
-  font-size: 20px;
+      &:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+    }
+  }
+
+  .hidden-xs {
+    display: none;
+  }
+
+  // Role Styling
+  td:nth-child(4) {
+    font-weight: bold;
+    text-transform: capitalize;
+  }
+
+  // Green for normal users
+  .user-role {
+    color: #28a745;
+  }
+
+  // Golden color with twinkle effect for user VIP
+  .user-vip {
+    color: #ffd700;
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.7), 0 0 15px rgba(255, 215, 0, 0.5);
+
+    animation: twinkle 1.5s infinite alternate;
+  }
+
+  @keyframes twinkle {
+    0% {
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.7), 0 0 15px rgba(255, 215, 0, 0.5);
+    }
+    100% {
+      text-shadow: 0 0 12px rgba(255, 215, 0, 1), 0 0 20px rgba(255, 215, 0, 0.8);
+    }
+  }
 }

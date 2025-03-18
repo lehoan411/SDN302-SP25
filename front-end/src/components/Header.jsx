@@ -4,11 +4,10 @@ import { Navbar, Nav, Button, Dropdown } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 
 const Header = () => {
-  const [token, setToken] = useState(localStorage.getItem("token") || "");
+  const [token, setToken] = useState(localStorage.getItem("token"));
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
-  
-  // Gọi API lấy thông tin user nếu có token
+
   useEffect(() => {
     if (token) {
       fetchUserData();
@@ -27,12 +26,11 @@ const Header = () => {
     }
   };
 
-  // Đăng xuất, xóa token
   const handleLogout = () => {
     localStorage.removeItem("token");
     setToken("");
     setUser(null);
-    navigate("/login"); // Điều hướng về trang login
+    navigate("/login");
   };
 
   return (
@@ -42,8 +40,7 @@ const Header = () => {
       </Navbar.Brand>
 
       <Nav className="ms-auto d-flex align-items-center gap-3">
-        {user ? (
-          // Nếu đã đăng nhập
+        {token && user ? (
           <>
             <span className="fw-semibold">Welcome, {user.name}</span>
             <Dropdown align="end">
@@ -53,7 +50,7 @@ const Header = () => {
                 style={{ background: "none" }}
               >
                 <img
-                  src={user.avatar || "https://i.pravatar.cc/40"}
+                  src={user.avatar || "https://cdn.pixabay.com/photo/2021/07/02/04/48/user-6380868_960_720.png"}
                   alt="User Avatar"
                   style={{
                     width: "40px",

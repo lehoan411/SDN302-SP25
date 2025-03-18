@@ -6,7 +6,7 @@ import axios from "axios";
 
 const EditProfile = () => {
   const navigate = useNavigate();
-  const userId = localStorage.getItem("userId"); // Lấy userId từ localStorage
+  const token = localStorage.getItem("token");
 
   const [user, setUser] = useState({
     avatar: "",
@@ -18,17 +18,18 @@ const EditProfile = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!userId) {
+    if (!token) {
       navigate("/login");
       return;
     }
     fetchUserData();
-  }, [userId, navigate]);
+  }, [token, navigate]);
 
   const fetchUserData = async () => {
-    if (!userId) return;
     try {
-      const response = await axios.get(`http://localhost:9999/users/${userId}`);
+      const response = await axios.get("http://localhost:9999/users/get-by-id", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setUser(response.data);
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -48,6 +49,11 @@ const EditProfile = () => {
   };
 
   const handleSaveChanges = async () => {
+    if (!user.name.trim()) {
+      alert("Name cannot be empty!");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("name", user.name);
     formData.append("bio", user.bio);
@@ -58,9 +64,13 @@ const EditProfile = () => {
 
     setLoading(true);
     try {
-      const response = await axios.put(`http://localhost:9999/users/${userId}/edit-profile`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const response = await axios.put("http://localhost:9999/users/edit-profile", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
       });
+
       setUser(response.data);
       alert("Profile updated successfully!");
       fetchUserData();

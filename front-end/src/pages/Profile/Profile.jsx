@@ -6,7 +6,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, PictureOutlined, UploadOutl
 
 const Profile = () => {
   const navigate = useNavigate();
-  const userId = localStorage.getItem("userId");
+  const token = localStorage.getItem("token");
 
   const [user, setUser] = useState(null);
   const [albums, setAlbums] = useState([]);
@@ -21,12 +21,14 @@ const Profile = () => {
 
   useEffect(() => {
     fetchUserData();
-  }, [userId]);
+  }, [token]);
 
   const fetchUserData = async () => {
-    if (!userId) return;
+    if (!token) return;
     try {
-      const response = await axios.get(`http://localhost:9999/users/${userId}`);
+      const response = await axios.get("http://localhost:9999/users/get-by-id", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setUser(response.data);
       setAlbums(response.data.albums);
       setFavorited(response.data.favorited);
@@ -34,6 +36,7 @@ const Profile = () => {
       console.error("Error fetching user data:", error);
     }
   };
+
   const handleEditClick = (album) => {
     setModalType("edit");
     setSelectedAlbum(album);
@@ -65,7 +68,6 @@ const Profile = () => {
 
     const formData = new FormData();
     formData.append("albumName", albumName);
-    formData.append("userId", userId);
     if (albumImage) {
       formData.append("albumImage", albumImage);
     }
@@ -73,17 +75,16 @@ const Profile = () => {
     try {
       let response;
       if (modalType === "add") {
-        response = await axios.post(`http://localhost:9999/albums/create`, formData, {
+        response = await axios.post("http://localhost:9999/albums/create", formData, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
-
         });
       } else if (modalType === "edit" && selectedAlbum) {
         response = await axios.put(`http://localhost:9999/albums/${selectedAlbum._id}/edit-album`, formData, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         });
@@ -91,13 +92,6 @@ const Profile = () => {
 
       if (response?.data?.album) {
         alert(`Album ${modalType === "add" ? "created" : "updated"} successfully!`);
-        setAlbums((prevAlbums) =>
-          modalType === "add"
-            ? [...prevAlbums, response.data.album]
-            : prevAlbums.map((album) =>
-              album._id === selectedAlbum._id ? response.data.album : album
-            )
-        );
         setShowModal(false);
         fetchUserData();
       } else {
@@ -116,12 +110,11 @@ const Profile = () => {
 
     try {
       const response = await axios.delete(`http://localhost:9999/albums/${albumId}/delete`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.status === 200) {
         alert("Album deleted successfully!");
-        setAlbums((prevAlbums) => prevAlbums.filter(album => album._id !== albumId));
         fetchUserData();
       } else {
         alert("Failed to delete album. Please try again.");
@@ -131,6 +124,7 @@ const Profile = () => {
       alert("An error occurred while deleting the album.");
     }
   };
+
 
   if (!user) {
     return <div style={{ textAlign: "center", marginTop: "50px" }}>Loading...</div>;
@@ -142,7 +136,7 @@ const Profile = () => {
       <Row className="text-center mb-4">
         <Col>
           <img
-            src={user.avatar || "https://i.pravatar.cc/150"}
+            src={user.avatar || "https://cdn.pixabay.com/photo/2021/07/02/04/48/user-6380868_960_720.png"}
             alt="User Avatar"
             style={{ width: "100px", height: "100px", borderRadius: "50%", objectFit: "cover", marginBottom: "10px" }}
           />

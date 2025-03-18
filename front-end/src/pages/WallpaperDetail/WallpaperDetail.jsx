@@ -8,39 +8,48 @@ const WallpaperDetail = () => {
     const { wallpaperId } = useParams();
     const [wallpaper, setWallpaper] = useState(null);
     const [newComment, setNewComment] = useState("");
-    const [user, setUser] = useState(null); // State lưu thông tin user
+    const [user, setUser] = useState(null);
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportReason, setReportReason] = useState("");
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [editedComment, setEditedComment] = useState("");
-    const userId = localStorage.getItem("userId");
-    const isFavorited = user?.favorited?.some(w => w._id === wallpaperId);
-    const startEditing = (comment) => {
-        setEditingCommentId(comment._id);
-        setEditedComment(comment.body);
-    };
+    const [favorited, setFavorited] = useState(false);
+    const token = localStorage.getItem("token");
 
     useEffect(() => {
-        // Lấy thông tin wallpaper
-        axios.get(`http://localhost:9999/wallpapers/${wallpaperId}`)
-            .then(response => setWallpaper(response.data))
-            .catch(error => console.error("Lỗi khi lấy dữ liệu:", error));
+        fetchData();
+    }, [wallpaperId]);
 
-        // Lấy thông tin user từ API
-        if (userId) {
-            axios.get(`http://localhost:9999/users/${userId}`)
-                .then(response => {
-                    setUser(response.data)
-                    console.log("User data:", response.data);
-                })
-                .catch(error => console.error("Lỗi khi lấy user:", error));
+    const fetchData = async () => {
+        try {
+            const wallpaperResponse = await axios.get(`http://localhost:9999/wallpapers/${wallpaperId}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+            setWallpaper(wallpaperResponse.data);
+
+            if (token) {
+                const userResponse = await axios.get("http://localhost:9999/users/get-by-id", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                setUser(userResponse.data);
+
+                const isLiked = userResponse.data.favorited.some((fav) => fav._id === wallpaperId);
+                setFavorited(isLiked);
+            }
+        } catch (error) {
+            console.error("Error fetching data:", error);
         }
-    }, [wallpaperId, userId]);
+    };
 
-    if (!wallpaper || (userId && !user)) {
+    if (!wallpaper) {
         return <div style={{ textAlign: "center", marginTop: "50px" }}>Loading...</div>;
     }
+
     const handleDownload = async () => {
+        if (!token) {
+            alert('Please Login to download this image!');
+            return;
+        }
         try {
             const response = await fetch(wallpaper.imageUrl);
             const blob = await response.blob();
@@ -53,44 +62,35 @@ const WallpaperDetail = () => {
             link.click();
             document.body.removeChild(link);
 
-            // Giải phóng URL object
             URL.revokeObjectURL(blobUrl);
         } catch (error) {
             console.error("Error downloading the image:", error);
         }
     };
 
-    // Xử lý thích ảnh
     const handleLike = async () => {
-        if (!userId) {
-            alert("Please login to use this function!");
+        if (!token) {
+            alert("Please login to like this image!");
             return;
         }
 
         try {
-            const response = await axios.post(`http://localhost:9999/wallpapers/${wallpaperId}/like`, { userId });
-
-            setUser(prev => {
-                const isLiked = prev?.favorited?.some(w => w._id === wallpaperId);
-                return {
-                    ...prev,
-                    favorited: isLiked
-                        ? prev.favorited.filter(w => w._id !== wallpaperId) // Xóa nếu đã thích
-                        : [...prev.favorited, { _id: wallpaperId }] // Thêm nếu chưa thích
-                };
+            const response = await axios.post(`http://localhost:9999/wallpapers/${wallpaperId}/like`, {}, {
+                headers: { Authorization: `Bearer ${token}` },
             });
 
-            setWallpaper(prev => ({
+            setFavorited((prev) => !prev);
+            setWallpaper((prev) => ({
                 ...prev,
-                likes: response.data.likes
+                likes: response.data.likes,
             }));
         } catch (error) {
             console.error("Error when liking image:", error);
         }
     };
-    // Gửi bình luận mới
+
     const handleCommentSubmit = async () => {
-        if (!userId) {
+        if (!token) {
             alert("Please login to use this function!");
             return;
         }
@@ -98,18 +98,19 @@ const WallpaperDetail = () => {
 
         try {
             const response = await axios.post(`http://localhost:9999/wallpapers/${wallpaperId}/comment`, {
-                userId,
-                body: newComment
+                body: newComment,
+            }, {
+                headers: { Authorization: `Bearer ${token}` },
             });
 
-            setWallpaper(prev => ({
+            setWallpaper((prev) => ({
                 ...prev,
-                comments: response.data.comments
+                comments: response.data.comments,
             }));
 
             setNewComment("");
         } catch (error) {
-            console.error("Error when send comment", error);
+            console.error("Error when sending comment:", error);
         }
     };
 
@@ -119,14 +120,30 @@ const WallpaperDetail = () => {
         try {
             const response = await axios.put(
                 `http://localhost:9999/wallpapers/${wallpaperId}/comment/${commentId}/edit`,
-                { body: editedComment }
+                { body: editedComment },
+                { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            setWallpaper(prev => ({ ...prev, comments: response.data.comments }));
+            setWallpaper((prev) => ({
+                ...prev,
+                comments: prev.comments.map((c) =>
+                    c._id === commentId ? { ...c, body: editedComment } : c
+                ),
+            }));
+
             setEditingCommentId(null);
         } catch (error) {
-            console.error("Lỗi khi chỉnh sửa comment:", error);
+            console.error("Error when editing comment:", error);
         }
+    };
+    const startEditingComment = (comment) => {
+        setEditingCommentId(comment._id);
+        setEditedComment(comment.body);
+    };
+
+    const cancelEditing = () => {
+        setEditingCommentId(null);
+        setEditedComment("");
     };
 
     const handleDeleteComment = async (commentId) => {
@@ -134,20 +151,25 @@ const WallpaperDetail = () => {
         if (!confirmDelete) return;
 
         try {
-            const response = await axios.delete(`http://localhost:9999/wallpapers/${wallpaperId}/comment/${commentId}/delete`);
-            setWallpaper(prev => ({
-                ...prev,
-                comments: response.data.comments
-            }));
-            alert("Delete comment successfully!");
+            await axios.delete(`http://localhost:9999/wallpapers/${wallpaperId}/comment/${commentId}/delete`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
+            // Xóa comment khỏi state ngay lập tức
+            setWallpaper((prev) => ({
+                ...prev,
+                comments: prev.comments.filter((comment) => comment._id !== commentId),
+            }));
+
+            alert("Comment deleted successfully!");
         } catch (error) {
-            console.error("Error when delete comment:", error);
+            console.error("Error when deleting comment:", error);
         }
     };
 
+
     const handleReportSubmit = async () => {
-        if (!userId) {
+        if (!token) {
             alert("Please login to report this image!");
             return;
         }
@@ -158,11 +180,16 @@ const WallpaperDetail = () => {
         }
 
         try {
-            await axios.post("http://localhost:9999/reports/create", {
-                reason: reportReason,
-                wallpaper: wallpaperId,
-                reporter: userId,
-            });
+            await axios.post(
+                "http://localhost:9999/reports/create",
+                {
+                    reason: reportReason,
+                    wallpaper: wallpaperId,  // Không cần gửi `reporter: user._id`, Backend sẽ lấy từ token
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
 
             alert("Report submitted successfully!");
             setShowReportModal(false);
@@ -172,11 +199,6 @@ const WallpaperDetail = () => {
             alert("Failed to send report. Please try again!");
         }
     };
-
-
-    // Gửi báo cáo
-    const handleReportClick = () => setShowReportModal(true);
-    const handleClose = () => setShowReportModal(false);
 
     return (
         <Container className="d-flex justify-content-center mt-4">
@@ -197,7 +219,7 @@ const WallpaperDetail = () => {
                             <DownloadOutlined className="me-3 text-primary" onClick={handleDownload} style={{ fontSize: "22px", cursor: "pointer" }} />
 
                             {/* Nút tym */}
-                            {isFavorited ? (
+                            {favorited ? (
                                 <HeartFilled
                                     className="me-2 text-danger"
                                     style={{ fontSize: "22px", cursor: "pointer" }}
@@ -212,7 +234,7 @@ const WallpaperDetail = () => {
                             )}
                             <span className="me-3">{wallpaper.likes}</span>
 
-                            <WarningOutlined className="text-danger" style={{ fontSize: "20px", cursor: "pointer" }} onClick={handleReportClick} />
+                            <WarningOutlined className="text-danger" style={{ fontSize: "20px", cursor: "pointer" }} onClick={() => setShowReportModal(true)} />
                         </div>
                     </Col>
 
@@ -236,51 +258,70 @@ const WallpaperDetail = () => {
                         <h6 className="fw-bold">{wallpaper.comments.length} comments</h6>
                         <div className="bg-light p-3 rounded-3" style={{ maxHeight: "300px", overflowY: "auto" }}>
                             {wallpaper.comments.map((comment, index) => (
-                                <div key={index} className="d-flex align-items-start bg-white p-2 rounded mb-2 shadow-sm">
+                                <div key={comment._id} className="d-flex align-items-start bg-white p-2 rounded mb-2 shadow-sm">
                                     <img
                                         src={comment.user?.avatar || "https://via.placeholder.com/40"}
                                         alt="Avatar"
                                         className="rounded-circle me-2"
                                         style={{ width: "40px", height: "40px", objectFit: "cover" }}
                                     />
-                                    <div className="d-flex flex-column">
+                                    <div className="d-flex flex-column flex-grow-1">
                                         <strong>{comment.user?.name || "Anonymous"}</strong>
                                         {editingCommentId === comment._id ? (
                                             <Form.Control
                                                 type="text"
                                                 value={editedComment}
                                                 onChange={(e) => setEditedComment(e.target.value)}
-                                                onBlur={() => saveEditedComment(comment._id)}
-                                                autoFocus
+                                                className="mb-2"
                                             />
                                         ) : (
                                             <p className="mb-1 text-muted">{comment.body}</p>
                                         )}
                                         <small className="text-muted">{new Date(comment.date).toLocaleDateString()}</small>
                                     </div>
-                                    {/* Nút xóa bình luận */}
-                                    <div key={comment._id} className="d-flex align-items-center ms-auto">
-                                        {comment.user._id === userId && (
-                                            <div className="d-flex flex-column align-items-center ms-3">
-                                                <ToolOutlined
-                                                    className="text-primary mb-1"
-                                                    style={{ cursor: "pointer", fontSize: "18px" }}
-                                                    onClick={() => startEditing(comment)}
-                                                />
-                                                <DeleteOutlined
-                                                    className="text-danger"
-                                                    style={{ cursor: "pointer", fontSize: "18px" }}
-                                                    onClick={() => handleDeleteComment(comment._id)}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
+
+                                    {/* Hiển thị nút sửa/xóa chỉ khi là comment của user hiện tại */}
+                                    {comment.user._id === user?._id && (
+                                        <div className="d-flex flex-column align-items-end ms-3">
+                                            {editingCommentId === comment._id ? (
+                                                <>
+                                                    <Button
+                                                        variant="success"
+                                                        size="sm"
+                                                        className="mb-1"
+                                                        onClick={() => saveEditedComment(comment._id)}
+                                                    >
+                                                        Save
+                                                    </Button>
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        onClick={cancelEditing}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ToolOutlined
+                                                        className="text-primary mb-2"
+                                                        style={{ cursor: "pointer", fontSize: "18px" }}
+                                                        onClick={() => startEditingComment(comment)}
+                                                    />
+                                                    <DeleteOutlined
+                                                        className="text-danger"
+                                                        style={{ cursor: "pointer", fontSize: "18px" }}
+                                                        onClick={() => handleDeleteComment(comment._id)}
+                                                    />
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
-
                         {/* Ô nhập bình luận */}
-                        {userId ? (
+                        {token ? (
                             <div className="d-flex align-items-center mt-3">
                                 <img
                                     src={user?.avatar || "https://via.placeholder.com/40"}
@@ -288,26 +329,24 @@ const WallpaperDetail = () => {
                                     className="rounded-circle me-2"
                                     style={{ width: "40px", height: "40px", objectFit: "cover" }}
                                 />
-                                <div className="flex-grow-1">
-                                    <Form.Control
-                                        type="text"
-                                        className="form-control"
-                                        placeholder="Viết bình luận..."
-                                        value={newComment}
-                                        onChange={(e) => setNewComment(e.target.value)}
-                                    />
-                                </div>
-                                <Button variant="success" className="fw-bold ms-2" onClick={handleCommentSubmit}>Send</Button>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Write a comment..."
+                                    value={newComment}
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                    className="flex-grow-1 me-2"
+                                />
+                                <Button variant="success" onClick={handleCommentSubmit}>Send</Button>
                             </div>
                         ) : (
-                            <Button variant="primary" className="fw-bold mt-2" onClick={() => alert("Chuyển đến trang đăng nhập!")}>Login to comment</Button>
+                            <Button variant="primary" className="mt-2">Login to comment</Button>
                         )}
                     </Col>
                 </Row>
             </Card>
 
             {/* Popup Report */}
-            <Modal show={showReportModal} onHide={handleClose} centered>
+            <Modal show={showReportModal} onHide={() => setShowReportModal(false)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Report description</Modal.Title>
                 </Modal.Header>
@@ -326,7 +365,7 @@ const WallpaperDetail = () => {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="light" onClick={handleClose}>Cancel</Button>
+                    <Button variant="light" onClick={() => setShowReportModal(false)}>Cancel</Button>
                     <Button variant="danger" onClick={handleReportSubmit}>Report</Button>
                 </Modal.Footer>
             </Modal>

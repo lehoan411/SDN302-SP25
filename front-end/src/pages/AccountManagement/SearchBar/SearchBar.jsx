@@ -17,28 +17,20 @@ const SearchBar = () => {
   const handleRoleChange = (event) => {
     const role = event.target.value;
     setSelectedRole(role);
-    sortByRoleAndSearch(role, searchValue);
+    filterUsers(role, searchValue);
   };
 
   const handleSearch = (event) => {
     const searchValue = event.target.value;
     setSearchValue(searchValue);
-    sortByRoleAndSearch(selectedRole, searchValue);
+    filterUsers(selectedRole, searchValue);
   };
 
-  const sortByRoleAndSearch = (role, searchValue) => {
+  const filterUsers = (role, searchValue) => {
     let filteredUsers = defaultUsers;
 
     if (role !== "All") {
-      if (role.toLowerCase() === "member") {
-        filteredUsers = filteredUsers.filter(
-          (user) => user.roles.length === 1 && user.roles[0].name.toLowerCase() === "member"
-        );
-      } else {
-        filteredUsers = filteredUsers.filter((user) =>
-          user.roles.some((r) => r.name.toLowerCase() === role.toLowerCase())
-        );
-      }
+      filteredUsers = filteredUsers.filter((user) => user.roles.toLowerCase() === role.toLowerCase());
     }
 
     if (searchValue) {
@@ -56,8 +48,8 @@ const SearchBar = () => {
         <select onChange={handleRoleChange} value={selectedRole}>
           <option disabled>Roles</option>
           <option>All</option>
-          <option>Vip</option>
-          <option>Member</option>
+          <option>user Vip</option>
+          <option>user</option>
         </select>
       </div>
 
