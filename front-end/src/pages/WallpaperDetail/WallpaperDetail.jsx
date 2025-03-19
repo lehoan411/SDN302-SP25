@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Card, Button, Container, Row, Col, Form, Modal } from "react-bootstrap";
 import { HeartOutlined, HeartFilled, WarningOutlined, DownloadOutlined, DeleteOutlined, ToolOutlined } from "@ant-design/icons";
@@ -15,7 +15,7 @@ const WallpaperDetail = () => {
     const [editedComment, setEditedComment] = useState("");
     const [favorited, setFavorited] = useState(false);
     const token = localStorage.getItem("token");
-
+    const navigate = useNavigate();
     useEffect(() => {
         fetchData();
     }, [wallpaperId]);
@@ -281,7 +281,7 @@ const WallpaperDetail = () => {
                                     </div>
 
                                     {/* Hiển thị nút sửa/xóa chỉ khi là comment của user hiện tại */}
-                                    {comment.user._id === user?._id && (
+                                    {comment.user && comment.user._id === user?._id &&  (
                                         <div className="d-flex flex-column align-items-end ms-3">
                                             {editingCommentId === comment._id ? (
                                                 <>
@@ -339,7 +339,7 @@ const WallpaperDetail = () => {
                                 <Button variant="success" onClick={handleCommentSubmit}>Send</Button>
                             </div>
                         ) : (
-                            <Button variant="primary" className="mt-2">Login to comment</Button>
+                            <Button variant="primary" onClick={() => navigate("/login")}>Login to comment</Button>
                         )}
                     </Col>
                 </Row>

@@ -8,7 +8,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import Register from './pages/Register';
 import Login from './pages/Login';
-import ChangePassword from './pages/ChangePassword';
+import ChangePassword from './pages/Profile/ChangePassword';
 import Home from './pages/Home/Home';
 import WallpaperDetail from './pages/WallpaperDetail/WallpaperDetail';
 import Profile from './pages/Profile/Profile';

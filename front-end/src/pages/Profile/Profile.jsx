@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Button, Card, Modal, Form } from "react-bootstrap";
+import { Container, Row, Col, Button, Card, Modal, Form, Spinner } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { PlusOutlined, EditOutlined, DeleteOutlined, PictureOutlined, UploadOutlined, HeartFilled } from "@ant-design/icons";
@@ -18,6 +18,7 @@ const Profile = () => {
   const [previewImage, setPreviewImage] = useState("");
   const [activeTab, setActiveTab] = useState("collections");
   const [favorited, setFavorited] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchUserData();
@@ -66,6 +67,7 @@ const Profile = () => {
       return;
     }
 
+    setLoading(true);
     const formData = new FormData();
     formData.append("albumName", albumName);
     if (albumImage) {
@@ -101,6 +103,7 @@ const Profile = () => {
       console.error(`Error ${modalType === "add" ? "creating" : "editing"} album:`, error);
       alert("An error occurred. Please try again.");
     }
+    setLoading(false);
   };
 
   const handleDeleteAlbum = async (albumId) => {
@@ -283,8 +286,10 @@ const Profile = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Close</Button>
-          <Button variant="primary" onClick={handleSaveChanges}>Save changes</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)} disabled={loading}>Close</Button>
+          <Button variant="primary" onClick={handleSaveChanges} disabled={loading}>
+            {loading ? <Spinner animation="border" size="sm" /> : "Save changes"}
+          </Button>
         </Modal.Footer>
       </Modal>
     </Container>

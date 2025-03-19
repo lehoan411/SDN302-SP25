@@ -37,6 +37,7 @@ AuthRouter.post("/sign-up", async (req, res) => {
     const newUser = new db.user({
       name,
       email,
+      avatar: "https://cdn.pixabay.com/photo/2021/07/02/04/48/user-6380868_960_720.png",
       password: hashPassword,
       roles: assignedRole,
       token,

@@ -28,13 +28,16 @@ const Home = () => {
         });
         setWallpapers(response.data);
 
-        const allTags = response.data.reduce((acc, wallpaper) => {
+        // Xử lý gộp các tag trùng nhau (không phân biệt hoa/thường)
+        const tagMap = new Map();
+        response.data.forEach((wallpaper) => {
           wallpaper.tags.forEach((tag) => {
-            if (!acc.includes(tag)) acc.push(tag);
+            const normalizedTag = tag.toLowerCase().trim(); // Chuẩn hóa tag
+            tagMap.set(normalizedTag, tag); // Dùng `Map` để tránh trùng lặp
           });
-          return acc;
-        }, ["All"]);
-        setCategories(allTags);
+        });
+
+        setCategories(["All", ...Array.from(tagMap.values())]); // Gộp lại danh sách tag
       } catch (error) {
         console.error("Error fetching wallpapers:", error);
       }
@@ -143,6 +146,7 @@ const Home = () => {
           </button>
         ))}
       </div>
+
 
       {/* Danh sách ảnh */}
       <div className={styles.wallpaperGrid}>

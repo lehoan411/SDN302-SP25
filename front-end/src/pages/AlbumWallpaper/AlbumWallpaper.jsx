@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Button, Card, Modal, Form } from "react-bootstrap";
+import { Container, Row, Col, Button, Card, Modal, Form, Spinner} from "react-bootstrap";
 import { UserOutlined, UploadOutlined, HeartOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -15,6 +15,7 @@ const AlbumWallpaper = () => {
   const [imageFile, setImageFile] = useState(null);
   const [imageInfo, setImageInfo] = useState({ description: "", tags: "" });
   const [previewImage, setPreviewImage] = useState(null);
+  const [loading, setLoading] = useState(false);
   const token = localStorage.getItem("token");
 
   useEffect(() => {
@@ -71,6 +72,7 @@ const AlbumWallpaper = () => {
       return;
     }
 
+    setLoading(true);
     const formData = new FormData();
     formData.append("albumId", albumId);
     formData.append("description", imageInfo.description);
@@ -99,13 +101,16 @@ const AlbumWallpaper = () => {
         setWallpapers(wallpapers.map((wp) => (wp._id === selectedImage._id ? response.data : wp)));
         alert("Image updated successfully!");
       }
+
+      // Chỉ đóng modal nếu thao tác thành công
+      setShowModal(false);
+      fetchData();
     } catch (error) {
       alert("Failed to process image. Please try again!");
       console.error("Error saving image:", error);
     }
 
-    setShowModal(false);
-    fetchData();
+    setLoading(false);
   };
 
   const handleDeleteImage = async (imageId) => {
@@ -231,8 +236,10 @@ const AlbumWallpaper = () => {
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
-          <Button variant="primary" onClick={handleSaveImage}>Save</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)} disabled={loading}>Cancel</Button>
+          <Button variant="primary" onClick={handleSaveImage} disabled={loading}>
+            {loading ? <Spinner animation="border" size="sm" /> : "Save"}
+          </Button>
         </Modal.Footer>
       </Modal>
     </Container>

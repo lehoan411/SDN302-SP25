@@ -63,13 +63,14 @@ AlbumRouter.post("/create", checkUserJWT, upload.single("albumImage"), async (re
                 const result = await cloudinary.uploader.upload(req.file.path);
                 if (result && result.secure_url) {
                     albumImage = result.secure_url;
-                    fs.unlink(req.file.path, () => {});
+                    fs.unlinkSync(req.file.path);
                 } else {
+                    fs.unlinkSync(req.file.path);
                     return res.status(500).json({ message: "Failed to upload image" });
                 }
             } catch (error) {
                 console.error("Cloudinary Upload Error:", error);
-                fs.unlink(file.path, () => { });
+                fs.unlinkSync(req.file.path);
                 return res.status(500).json({ message: "Error when create album" });
             }
         }
@@ -84,6 +85,7 @@ AlbumRouter.post("/create", checkUserJWT, upload.single("albumImage"), async (re
 
         res.status(201).json({ message: "Album created successfully", album: newAlbum });
     } catch (error) {
+        if (req.file) fs.unlinkSync(req.file.path); 
         res.status(500).json({ message: "Failed to create album" });
     }
 });
@@ -98,10 +100,12 @@ AlbumRouter.put("/:albumId/edit-album", checkUserJWT, upload.single("albumImage"
         const album = await db.album.findById(albumId);
 
         if (!album) {
+            if (req.file) fs.unlinkSync(req.file.path); 
             return res.status(404).json({ message: "Album not found" });
         }
 
         if (album.author.toString() !== userId) {
+            if (req.file) fs.unlinkSync(req.file.path); 
             return res.status(403).json({ message: "Unauthorized: You can only edit your own albums" });
         }
 
@@ -112,13 +116,14 @@ AlbumRouter.put("/:albumId/edit-album", checkUserJWT, upload.single("albumImage"
                 const result = await cloudinary.uploader.upload(req.file.path);
                 if (result && result.secure_url) {
                     newAlbumImage = result.secure_url;
-                    fs.unlink(req.file.path, () => {});
+                    fs.unlinkSync(req.file.path);
                 } else {
+                    fs.unlinkSync(req.file.path);
                     return res.status(500).json({ message: "Failed to upload image" });
                 }
             } catch (error) {
                 console.error("Cloudinary Upload Error:", error);
-                fs.unlink(file.path, () => { });
+                fs.unlinkSync(req.file.path);
                 return res.status(500).json({ message: "Image upload error" });
             }
         }
@@ -131,6 +136,7 @@ AlbumRouter.put("/:albumId/edit-album", checkUserJWT, upload.single("albumImage"
 
         res.status(200).json({ message: "Album updated successfully", album: updatedAlbum });
     } catch (error) {
+        if (req.file) fs.unlinkSync(req.file.path);
         res.status(500).json({ message: error.message });
     }
 });

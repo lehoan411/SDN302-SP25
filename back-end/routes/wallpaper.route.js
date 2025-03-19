@@ -61,6 +61,7 @@ WallpaperRouter.post("/create", checkUserJWT, upload.single("imageUrl"), async (
         let imageUrl = "";
 
         if (!albumId) {
+            if (req.file) fs.unlinkSync(req.file.path);
             return res.status(400).json({ message: "Missing albumId" });
         }
 
@@ -75,13 +76,14 @@ WallpaperRouter.post("/create", checkUserJWT, upload.single("imageUrl"), async (
             const result = await cloudinary.uploader.upload(req.file.path);
             if (result && result.secure_url) {
                 imageUrl = result.secure_url;
-                fs.unlink(req.file.path, () => { });
+                fs.unlinkSync(req.file.path);
             } else {
+                fs.unlinkSync(req.file.path);
                 return res.status(500).json({ message: "Failed to upload image" });
             }
         } catch (error) {
             console.error("Cloudinary Upload Error:", error);
-            fs.unlink(file.path, () => { });
+            fs.unlinkSync(req.file.path);
             return res.status(500).json({ message: "Image upload error" });
         }
 
@@ -110,10 +112,12 @@ WallpaperRouter.put("/:wallpaperId/edit-wallpaper", checkUserJWT, upload.single(
         const wallpaper = await db.wallpaper.findById(req.params.wallpaperId);
 
         if (!wallpaper) {
+            if (req.file) fs.unlinkSync(req.file.path);
             return res.status(404).json({ message: "Wallpaper not found" });
         }
 
         if (wallpaper.createdBy.toString() !== userId) {
+            if (req.file) fs.unlinkSync(req.file.path);
             return res.status(403).json({ message: "Unauthorized: You can only edit your own wallpapers" });
         }
 
@@ -124,11 +128,11 @@ WallpaperRouter.put("/:wallpaperId/edit-wallpaper", checkUserJWT, upload.single(
                 const result = await cloudinary.uploader.upload(req.file.path);
                 if (result && result.secure_url) {
                     newWallpaperImage = result.secure_url;
-                    fs.unlink(req.file.path, () => { });
+                    fs.unlinkSync(req.file.path);
                 }
             } catch (error) {
                 console.error("Cloudinary Upload Error:", error);
-                fs.unlink(req.file.path, () => { });
+                fs.unlinkSync(req.file.path);
                 return res.status(500).json({ message: "Fail to update image. Try again!" });
             }
         }
@@ -141,6 +145,7 @@ WallpaperRouter.put("/:wallpaperId/edit-wallpaper", checkUserJWT, upload.single(
 
         res.status(200).json(updatedWallpaper);
     } catch (error) {
+        fs.unlinkSync(req.file.path);
         res.status(500).json({ message: error.message });
     }
 });
