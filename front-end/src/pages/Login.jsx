@@ -32,8 +32,8 @@ function Login() {
         const { token } = response.data;
         localStorage.setItem("token", token);
 
-        // Decode token properly
-        const decodedToken = jwtDecode(token); // FIXED ✅
+        // Decode token
+        const decodedToken = jwtDecode(token);
         const userRoles = decodedToken.roles || [];
 
         toast.success("Login successful!");
@@ -49,7 +49,13 @@ function Login() {
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || "Login failed. Please try again.";
-      toast.error(errorMessage);
+
+      // Kiểm tra nếu tài khoản bị vô hiệu hóa
+      if (error.response?.status === 403) {
+        toast.error("Your account is inactive.");
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

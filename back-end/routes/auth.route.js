@@ -41,7 +41,7 @@ AuthRouter.post("/sign-up", async (req, res) => {
       password: hashPassword,
       roles: assignedRole,
       token,
-      status: "inactive", // Mặc định chưa kích hoạt
+      status: "active", 
     });
 
     await newUser.save();
@@ -67,6 +67,11 @@ AuthRouter.post("/sign-in", async (req, res) => {
       return res.status(401).json({ message: "Email or password is wrong" });
     }
 
+    // Kiểm tra trạng thái user
+    if (existUser.status !== "active") {
+      return res.status(403).json({ message: "Your account is inactive" });
+    }
+
     const isCorrectPassword = bcrypt.compareSync(password, existUser.password);
     if (!isCorrectPassword) {
       return res.status(401).json({ message: "Wrong email or password" });
@@ -85,5 +90,4 @@ AuthRouter.post("/sign-in", async (req, res) => {
     return res.status(500).json({ status: 500, message: "Internal Server Error" });
   }
 });
-
 module.exports = AuthRouter;
