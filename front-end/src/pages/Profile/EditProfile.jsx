@@ -54,6 +54,23 @@ const EditProfile = () => {
       return;
     }
 
+    // Validate ngày sinh không phải là hiện tại hoặc tương lai
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Xóa phần giờ để so sánh chính xác
+
+  const userDob = new Date(user.dob);
+  userDob.setHours(0, 0, 0, 0); // Xóa phần giờ để so sánh chính xác
+
+  if (isNaN(userDob.getTime())) {
+    alert("Invalid Date of Birth!");
+    return;
+  }
+
+  if (userDob >= today) {
+    alert("Date of Birth cannot be today or a future date.");
+    return;
+  }
+
     const formData = new FormData();
     formData.append("name", user.name);
     formData.append("bio", user.bio);
