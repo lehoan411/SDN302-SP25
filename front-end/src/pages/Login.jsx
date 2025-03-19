@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode"; // FIXED IMPORT ✅
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -28,11 +29,21 @@ function Login() {
       );
 
       if (response.status === 200) {
-        // Chỉ lưu token vào localStorage
-        localStorage.setItem("token", response.data.token);
+        const { token } = response.data;
+        localStorage.setItem("token", token);
+
+        // Decode token properly
+        const decodedToken = jwtDecode(token); // FIXED ✅
+        const userRoles = decodedToken.roles || [];
+
         toast.success("Login successful!");
+
         setTimeout(() => {
-          navigate("/"); // Điều hướng về trang chính sau khi đăng nhập thành công
+          if (userRoles.includes("admin")) {
+            navigate("/management/account");
+          } else {
+            navigate("/");
+          }
           window.location.reload();
         }, 1500);
       }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { HeartOutlined, UserOutlined, HeartFilled } from "@ant-design/icons";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import styles from "../Home/Home.module.scss"; // Import SCSS
 
 const Home = () => {
@@ -10,15 +10,10 @@ const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [categories, setCategories] = useState(["All"]);
   const [favoritedImages, setFavoritedImages] = useState([]);
+  const [userRole, setUserRole] = useState(null); // Ensure correct re-rendering
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
-
-  const handleNavigate = (e, wallpaperId) => {
-    if (!e.target.closest("button")) {
-      navigate(`/wallpaper/${wallpaperId}`);
-    }
-  };
 
   useEffect(() => {
     const fetchWallpapers = async () => {
@@ -28,16 +23,16 @@ const Home = () => {
         });
         setWallpapers(response.data);
 
-        // Xử lý gộp các tag trùng nhau (không phân biệt hoa/thường)
+        // Collect unique categories (case insensitive)
         const tagMap = new Map();
         response.data.forEach((wallpaper) => {
           wallpaper.tags.forEach((tag) => {
-            const normalizedTag = tag.toLowerCase().trim(); // Chuẩn hóa tag
-            tagMap.set(normalizedTag, tag); // Dùng `Map` để tránh trùng lặp
+            const normalizedTag = tag.toLowerCase().trim();
+            tagMap.set(normalizedTag, tag);
           });
         });
 
-        setCategories(["All", ...Array.from(tagMap.values())]); // Gộp lại danh sách tag
+        setCategories(["All", ...Array.from(tagMap.values())]);
       } catch (error) {
         console.error("Error fetching wallpapers:", error);
       }
@@ -49,7 +44,10 @@ const Home = () => {
           const response = await axios.get("http://localhost:9999/users/get-by-id", {
             headers: { Authorization: `Bearer ${token}` },
           });
+
+          setUserRole(response.data.roles); // Ensure role is set
           setFavoritedImages(response.data.favorited || []);
+          console.log("User Role:", response.data.roles); // Debugging
         } catch (error) {
           console.error("Error fetching user data:", error);
         }
@@ -60,68 +58,15 @@ const Home = () => {
     fetchUserFavorites();
   }, [token]);
 
-  const handleLike = async (wallpaperId) => {
-    if (!token) {
-      alert("Please login to use this function!");
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        `http://localhost:9999/wallpapers/${wallpaperId}/like`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setFavoritedImages((prev) =>
-        prev.some((w) => w._id === wallpaperId)
-          ? prev.filter((w) => w._id !== wallpaperId)
-          : [...prev, { _id: wallpaperId }]
-      );
-
-      setWallpapers((prev) =>
-        prev.map((wp) =>
-          wp._id === wallpaperId ? { ...wp, likes: response.data.likes } : wp
-        )
-      );
-    } catch (error) {
-      console.error("Error when liking image:", error);
-    }
-  };
-
-  const isFavorited = (wallpaperId) => favoritedImages.some((w) => w._id === wallpaperId);
-
-  const filteredWallpapers = wallpapers.filter((wallpaper) => {
-    const matchesSearch = wallpaper.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || wallpaper.tags.includes(selectedCategory);
-    return matchesSearch && matchesCategory;
-  });
-
-  const handleDownload = async (imageUrl, description) => {
-    if (!token) {
-      alert('Please Login to download this image!');
-      return;
-    }
-    try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = description ? `${description}.jpg` : "wallpaper.jpg";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-      console.error("Error downloading the image:", error);
+  const handleNavigate = (e, wallpaperId) => {
+    if (!e.target.closest("button")) {
+      navigate(`/wallpaper/${wallpaperId}`);
     }
   };
 
   return (
     <div className={styles.container}>
+
       {/* Banner */}
       <div className={styles.banner} style={{ backgroundImage: "url('/homeBackground.jpg')" }}>
         <h2>The best free images shared by creators.</h2>
@@ -134,7 +79,7 @@ const Home = () => {
         />
       </div>
 
-      {/* Filter Buttons */}
+      {/* Category Filter */}
       <div className={styles.filterButtons}>
         {categories.map((category) => (
           <button
@@ -145,12 +90,19 @@ const Home = () => {
             {category}
           </button>
         ))}
+        {userRole === "admin" && (
+          <button
+            onClick={() => navigate("/management/account")}
+            className={styles.adminButton}
+          >
+            Go to Management Account
+          </button>
+        )}
       </div>
 
-
-      {/* Danh sách ảnh */}
+      {/* Wallpaper Grid */}
       <div className={styles.wallpaperGrid}>
-        {filteredWallpapers.map((wallpaper) => (
+        {wallpapers.map((wallpaper) => (
           <div
             key={wallpaper._id}
             className={styles.wallpaperCard}
@@ -158,40 +110,32 @@ const Home = () => {
             style={{ cursor: "pointer" }}
           >
             <img src={wallpaper.imageUrl} alt={wallpaper.description} className={styles.wallpaperImage} />
+
             {/* Overlay */}
             <div className={styles.overlay}>
-              {/* Yêu thích */}
-              <button className={styles.iconButton} onClick={(e) => {
-                e.stopPropagation();
-                handleLike(wallpaper._id);
-              }}>
-                {isFavorited(wallpaper._id) ? (
+              {/* Like Button */}
+              <button
+                className={styles.iconButton}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Handle like function here
+                }}
+              >
+                {favoritedImages.some((w) => w._id === wallpaper._id) ? (
                   <HeartFilled style={{ fontSize: "18px", color: "red" }} />
                 ) : (
                   <HeartOutlined style={{ fontSize: "18px", color: "#aaa" }} />
                 )}
               </button>
 
-              {/* Thông tin */}
+              {/* User Info */}
               <div className={styles.userInfo}>
-                <button className={styles.downloadButton}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDownload(wallpaper.imageUrl, wallpaper.description);
-                  }}
-                >Download</button>
-                <div className={styles.userInfo}>
-                  <span className={styles.userName}>{wallpaper.createdBy?.name || "Unknown"}</span>
-                  {wallpaper.createdBy?.avatar ? (
-                    <img
-                      src={wallpaper.createdBy.avatar}
-                      alt={wallpaper.createdBy.name}
-                      className={styles.userAvatar}
-                    />
-                  ) : (
-                    <UserOutlined style={{ fontSize: "24px", color: "#aaa" }} />
-                  )}
-                </div>
+                <span className={styles.userName}>{wallpaper.createdBy?.name || "Unknown"}</span>
+                {wallpaper.createdBy?.avatar ? (
+                  <img src={wallpaper.createdBy.avatar} alt={wallpaper.createdBy.name} className={styles.userAvatar} />
+                ) : (
+                  <UserOutlined style={{ fontSize: "24px", color: "#aaa" }} />
+                )}
               </div>
             </div>
           </div>
