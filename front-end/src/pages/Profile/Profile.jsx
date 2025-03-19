@@ -147,6 +147,16 @@ const Profile = () => {
           <p className="text-muted">{user.email}</p>
           <p>{user.bio}</p>
           <p className="text-muted">DOB: {new Date(user.dob).toLocaleDateString()}</p>
+          {user.roles === "admin" && (
+            <div className="mt-3">
+              <Button variant="danger" className="me-2" onClick={() => navigate("/management/report")}>
+                📝 Manage Report
+              </Button>
+              <Button variant="dark" onClick={() => navigate("/management/account")}>
+                ⚙️ Manage Account
+              </Button>
+            </div>
+          )}
         </Col>
       </Row>
 
