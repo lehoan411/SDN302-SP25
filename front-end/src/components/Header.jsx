@@ -71,6 +71,7 @@ const Header = () => {
             </Dropdown>
           </>
         ) : (
+          // Nếu chưa đăng nhập
           <>
             <Button as={Link} to="/register" variant="warning" className="fw-semibold px-3 text-white">
               Register
