@@ -53,23 +53,28 @@ const EditProfile = () => {
       alert("Name cannot be empty!");
       return;
     }
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (!nameRegex.test(user.name)) {
+      alert("Name must not contain numbers or special characters.");
+      return;
+    }
 
     // Validate ngày sinh không phải là hiện tại hoặc tương lai
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Xóa phần giờ để so sánh chính xác
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Xóa phần giờ để so sánh chính xác
 
-  const userDob = new Date(user.dob);
-  userDob.setHours(0, 0, 0, 0); // Xóa phần giờ để so sánh chính xác
+    const userDob = new Date(user.dob);
+    userDob.setHours(0, 0, 0, 0); // Xóa phần giờ để so sánh chính xác
 
-  if (isNaN(userDob.getTime())) {
-    alert("Invalid Date of Birth!");
-    return;
-  }
+    if (isNaN(userDob.getTime())) {
+      alert("Invalid Date of Birth!");
+      return;
+    }
 
-  if (userDob >= today) {
-    alert("Date of Birth cannot be today or a future date.");
-    return;
-  }
+    if (userDob >= today) {
+      alert("Date of Birth cannot be today or a future date.");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("name", user.name);

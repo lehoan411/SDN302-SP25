@@ -13,6 +13,30 @@ const ChangePassword = () => {
     const handleChangePassword = async (e) => {
         e.preventDefault();
 
+        // Validate mật khẩu phải từ 6 ký tự trở lên
+        if (newPassword.length < 6) {
+            setError("Password must be at least 6 characters");
+            return;
+        }
+
+        //  Validate mật khẩu mới khác mật khẩu cũ
+        if (oldPassword === newPassword) {
+            setError("New password cannot be the same as the old password.");
+            return;
+        }
+
+        //  Validate không chứa khoảng trắng
+        if (/\s/.test(newPassword)) {
+            setError("Password cannot contain spaces.");
+            return;
+        }
+
+        //  Validate mật khẩu nhập lại trùng với mật khẩu mới
+        if (newPassword !== confirmPassword) {
+            setError("New password and confirmation do not match.");
+            return;
+        }
+
         if (newPassword !== confirmPassword) {
             setError("New password and confirmation do not match");
             return;
@@ -40,8 +64,8 @@ const ChangePassword = () => {
     };
 
     return (
-        <div className="container mt-4" style={{marginBottom: '50px'}}>
-            <h2 style={{margin:"30px 0"}}>Change Password</h2>
+        <div className="container mt-4" style={{ marginBottom: '50px' }}>
+            <h2 style={{ margin: "30px 0" }}>Change Password</h2>
             {message && <div className="alert alert-success">{message}</div>}
             {error && <div className="alert alert-danger">{error}</div>}
             <form onSubmit={handleChangePassword}>
@@ -75,8 +99,8 @@ const ChangePassword = () => {
                         required
                     />
                 </div>
-                <button type="submit" style={{marginTop: '20px'}} className="btn btn-primary">Change Password</button>
-                <button style={{marginTop: '20px', marginLeft: '20px'}} className="btn btn-secondary" onClick={() => navigate("/profile/edit-profile")}>Go back</button>
+                <button type="submit" style={{ marginTop: '20px' }} className="btn btn-primary">Change Password</button>
+                <button style={{ marginTop: '20px', marginLeft: '20px' }} className="btn btn-secondary" onClick={() => navigate("/profile/edit-profile")}>Go back</button>
             </form>
         </div>
     );

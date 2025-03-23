@@ -2,7 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const UserRouter = express.Router();
-const { checkUserJWT, isAdmin,} = require("../middlewares/JsonWebToken");
+const { checkUserJWT, isAdmin, } = require("../middlewares/JsonWebToken");
 const User = require("../models/user");
 const cloudinary = require("../configs/cloudinary");
 const fs = require("fs");
@@ -60,6 +60,22 @@ UserRouter.put("/edit-profile", checkUserJWT, upload.single("avatar"), async (re
         const userId = req.user.userId;
         const user = await User.findById(userId);
 
+        // Validate name: không có số hoặc ký tự đặc biệt
+        const nameRegex = /^[A-Za-z\s]+$/;
+        if (!nameRegex.test(name)) {
+            return res.status(400).json({ message: "Name must not contain numbers or special characters." });
+        }
+
+        // Validate dob: không phải hôm nay hoặc tương lai
+        const dobDate = new Date(dob);
+        const today = new Date();
+        dobDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+
+        if (dobDate >= today) {
+            return res.status(400).json({ message: "Date of birth cannot be today or in the future." });
+        }
+
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -71,12 +87,12 @@ UserRouter.put("/edit-profile", checkUserJWT, upload.single("avatar"), async (re
                 const result = await cloudinary.uploader.upload(req.file.path);
                 if (result && result.secure_url) {
                     newAvatarUrl = result.secure_url;
-                    fs.unlink(req.file.path, () => {});
+                    fs.unlink(req.file.path, () => { });
                 } else {
                     return res.status(500).json({ message: "Failed to upload image" });
                 }
             } catch (error) {
-                fs.unlink(req.file.path, () => {});
+                fs.unlink(req.file.path, () => { });
                 return res.status(500).json({ message: "Fail to update profile. Try again!" });
             }
         }
@@ -123,6 +139,21 @@ UserRouter.put("/change-password", checkUserJWT, async (req, res) => {
             return res.status(400).json({ message: "Old password is incorrect" });
         }
 
+        // Validate: mật khẩu phải từ 6 ký tự trở lên
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: "Password must be at least 6 characters" });
+        }
+         // Validate: mật khẩu mới không trùng mật khẩu cũ
+         const isSamePassword = await bcrypt.compare(newPassword, user.password);
+         if (isSamePassword) {
+             return res.status(400).json({ message: "New password cannot be the same as old password." });
+         }
+ 
+         // Validate: không chứa dấu cách
+         if (/\s/.test(newPassword)) {
+             return res.status(400).json({ message: "Password cannot contain spaces." });
+         }
+ 
         // Hash mật khẩu mới
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);

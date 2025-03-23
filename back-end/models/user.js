@@ -14,6 +14,7 @@ const UserSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
+    minlength: 6,
   },
   roles: {
     type: String,
@@ -22,16 +23,13 @@ const UserSchema = new mongoose.Schema({
   },
   bio: {
     type: String,
-    require: false,
   },
   avatar: {
     type: String,
-    require: false,
   },
   albums: [{ type: mongoose.Schema.Types.ObjectId, ref: "album" }], 
   dob: {
     type: Date,
-    require: false,
   },
   favorited: [{ type: mongoose.Schema.Types.ObjectId, ref: "wallpaper" }],
   status:{
